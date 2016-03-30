@@ -46,11 +46,13 @@ def iterate_schema(fields, schema, path=None):
     """
     for field_schema in schema:
         name = field_schema['name']
+        # not in bottom level
         if 'group' in field_schema:
             for rvals in iterate_schema(fields[name] if name in fields else {},
                                         field_schema['group'],
                                         None if path is None else '{}.{}'.format(path, name)):
                 yield rvals
+        # bottom level
         else:
             if path is None:
                 yield (field_schema, fields)

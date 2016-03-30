@@ -77,6 +77,12 @@ GENIALIS_EMAIL = args.email
 GENIALIS_PASS = args.password
 GENIALIS_SEQ_DIR = os.path.normpath(os.path.join(os.getcwd(), args.directory))
 
+GENIALIS_URL = 'http://127.0.0.1:8000/'
+GENIALIS_EMAIL = 'admin'
+GENIALIS_PASS = 'admin'
+GENIALIS_SEQ_DIR = '/home/jure/genialis/resolwe_bio_py'
+
+
 print(GENIALIS_URL)
 print(GENIALIS_EMAIL)
 print(GENIALIS_PASS)
@@ -249,15 +255,16 @@ for ann_file in all_annotation_files:
 re = resolwe_api.Resolwe(GENIALIS_EMAIL, GENIALIS_PASS, GENIALIS_URL)
 
 # This is currently still uploading to the old platform:
-collection_id = '56e2ac1a7ed5881067fcd421'
-process_name = 'import:upload:reads-fastq'
+collection_id = '1'
+# process_name = 'import:upload:reads-fastq'
+process_name = 'Upload NGS reads'
 
 # Upload all files in ``all_new_read_files_uploaded`` that have annotations.
 uploaded_files = []
 for fn in set(set(annotations.keys()) & set(all_new_read_files_uploaded)):
     # If single and reads:
     if annotations[fn]["PAIRED_END"] != "Y":
-        response = re.upload(collection_id, process_name, src=fn)
+        response = re.upload(process_name, collection_id=collection_id, src=fn)
         if response.ok:
             uploaded_files.append(fn)
     # Paired and reads:

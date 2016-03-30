@@ -6,48 +6,82 @@ from .utils import iterate_schema
 
 class Data(object):
 
-    """Resolwe data object annotation."""
+    """Resolwe data object annotation.
+
+    So, what is Resolwe data object exactly.
+
+    It is best if we explain what it does. when creating dataSo can be considered as a copy of all anntations from specific data object.
+    What is data object? At least link to somewhere where this is explained!
+
+
+    Nujno moram vedeti bolj kako izgleda data objekt na nai platformi. V vsej splosnosti. Vedeti moram kaj so fieldi, kaj so vse te sheme...
+    """
 
     def __init__(self, data, resolwe):
         self.resolwe = resolwe
         self.update(data)
 
     def update(self, data):
-        """Update the object with new data."""
+        """
+        Update the object with new data.
+
+        :param data: Annotation data for data object
+        :type collection: dictionary
+        :rtype: None
+
+        """
+
         fields = [
-            'id',
-            'status',
-            'type',
-            'persistence',
-            'date_start',
-            'date_finish',
-            'date_created',
-            'date_modified',
-            'checksum',
-            'processor_name',
+            'slug',
+            'name',
+            'contributor',
             'input',
-            'input_schema',
             'output',
-            'output_schema',
-            'static',
-            'static_schema',
-            'var',
-            'var_template',
+            'descriptor_schema',
+            'descriptor',
+            'process',
+            'id',
+            'created',
+            'modified',
+            'started',
+            'finished',
+            'checksum',
+            'status',
+            'process_progress',
+            'process_rc',
+            'process_info',
+            'process_warning',
+            'process_error',
+            'process_type',
+            'process_input_schema',
+            'process_output_schema',
+            'process_name',
+            'permissions',
         ]
 
         self.annotation = {}
         for f in fields:
             setattr(self, f, data[f])
 
-        self.name = data['static']['name'] if 'name' in data['static'] else ''
-
-        self.annotation.update(self._flatten_field(data['input'], data['input_schema'], 'input'))
-        self.annotation.update(self._flatten_field(data['output'], data['output_schema'], 'output'))
-        self.annotation.update(self._flatten_field(data['static'], data['static_schema'], 'static'))
-        self.annotation.update(self._flatten_field(data['var'], data['var_template'], 'var'))
+         # Annotation itam are flattened -this means that the deep structure is all brought to one mian level.
+         # Kaj smo prej s tem hoteli naredit?
+        self.annotation.update(self._flatten_field(data['input'], data['process_input_schema'], 'input'))
+        self.annotation.update(self._flatten_field(data['output'], data['process_output_schema'], 'output'))
+        # any more updates?
 
     def _flatten_field(self, field, schema, path):
-        """Reduce dicts of dicts to dot separated keys."""
+        """
+        Reduce dicts of dicts to dot separated keys.
+
+        :param field: Field instance (e.g. input)
+        :type field: dict
+        :param schema: Schema instance (e.g. input_schema)
+        :type schema: dict
+        :param path: Field path
+        :type path: string
+        :return: flattened annotations
+        :rtype: dictionary
+        """
         flat = {}
         for field_schema, fields, path in iterate_schema(field, schema, path):
             name = field_schema['name']
@@ -59,12 +93,12 @@ class Data(object):
         return flat
 
     def print_annotation(self):
-        """Print annotation "key: value" pairs to standard output."""
+        """Print "key: value" pairs to standard output."""
         for path, ann in self.annotation.items():
             print("{}: {}".format(path, ann['value']))
 
     def print_downloads(self):
-        """Print file fields to standard output."""
+        """Print fields that can be downloaded to standard output."""
         for path, ann in self.annotation.items():
             if path.startswith('output') and ann['type'] == 'basic:file:':
                 print("{}: {}".format(path, ann['value']['file']))
