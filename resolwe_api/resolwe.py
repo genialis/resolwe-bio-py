@@ -1,4 +1,4 @@
-"""Genesis"""
+"""Resolwe"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import json
@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import uuid
+import ntpath
 
 if sys.version_info < (3, ):
     import urlparse
@@ -31,11 +32,24 @@ class Resolwe(object):
     """Python API for Resolwe Bioinformatics."""
 
     def __init__(self, email=DEFAULT_EMAIL, password=DEFAULT_PASSWD, url=DEFAULT_URL):
+        """
+        Connect to Resolwe on desired url and provide credentials.
+        """
+
         self.url = url
         self.auth = ResAuth(email, password, url)
-        self.api = slumber.API(urlparse.urljoin(url, 'api/v1/'), self.auth)
+        self.api = slumber.API(urlparse.urljoin(url, '/api/'), self.auth, append_slash=False)
 
-        self.cache = {'objects': {}, 'collections': None, 'collection_objects': {}}
+
+        # Defines cache to reuse the data already downloaded.
+        #
+        # data = dict of (data_id - Data) pairs
+        # collections = dict of (collection_id - collection) pairs
+        # collections_data - dict of (collection_id - data_list) pairs,
+        #   where data_list is list of all data objects for given collection_id
+        self.cache = {'data': {}, 'collections': None, 'collections_data': {}}
+        # How about when the sever is changed - how can we get the changes? For example someone adds a collection or some data. Cache does not know this and cannot update?
+        # this cache thing is just partially implemented now...
 
     def collections(self):
         """Return a list :obj:`Collection` collections.
@@ -44,8 +58,7 @@ class Resolwe(object):
 
         """
         if not ('collections' in self.cache and self.cache['collections']):
-            self.cache['collections'] = {c['id']: Collection(c, self) for c in self.api.case.get()['objects']}
-
+            self.cache['collections'] = {c['id']: Collection(c, self) for c in self.api.collection.get()}
         return self.cache['collections']
 
     def collection_data(self, collection):
@@ -56,21 +69,27 @@ class Resolwe(object):
         :rtype: list of Data objects
 
         """
-        projobjects = self.cache['collection_objects']
-        objects = self.cache['objects']
+        #
+        cache_collections_data = self.cache['collections_data']
+        cache_data = self.cache['objects']
         collection_id = str(collection)
 
-        if not re.match('^[0-9a-fA-F]{24}$', collection_id):
-            # collection_id is a slug
-            collections = self.api.case.get(url_slug=collection_id)['objects']
+        if not re.match('^[0-9]+$', collection_id):
+            # collection_id is a slug - transform it to collection_id number
+            collections = [c for c in self.api.collection.get() if c['slug'] == collection_id]
             if len(collections) != 1:
                 raise ValueError(msg='Attribute collection not a slug or ObjectId: {}'.format(collection_id))
 
             collection_id = str(collections[0]['id'])
 
-        if collection_id not in projobjects:
-            projobjects[collection_id] = []
-            data = self.api.data.get(case_ids__contains=collection_id)['objects']
+        if collection_id not in cache_collections_data:
+            cache_collections_data[collection_id] = []
+            # data = [d for d in self.api.data.get() if d['slug'] == "slug1"]
+            data = [d for d in self.api.data.get()]
+            # Here you can make a smart querry.. ask Domen!
+            # print(data)
+            # data = all data for given collection
+            self.api.data.get(case_ids__contains=collection_id)
             for d in data:
                 _id = d['id']
                 if _id in objects:
@@ -80,10 +99,11 @@ class Resolwe(object):
                     # Insert new object
                     objects[_id] = Data(d, self)
 
-                projobjects[collection_id].append(objects[_id])
+                cache_collections_data[collection_id].append(objects[_id])
 
             # Hydrate reference fields
-            for d in projobjects[collection_id]:
+            # = what does this mean?
+            for d in cache_collections_data[collection_id]:
                 while True:
                     ref_annotation = {}
                     remove_annotation = []
@@ -103,10 +123,15 @@ class Resolwe(object):
                     else:
                         break
 
-        return projobjects[collection_id]
+        # what is there were changes on the server and there are new data?
+        # update cache?
+        return cache_collections_data[collection_id]
 
     def data(self, **query):
-        """Query for Data object annotation."""
+        """Query for Data object annotation.
+
+        What does this mean? What kind of querry can this be?
+        """
         objects = self.cache['objects']
         data = self.api.data.get(**query)['objects']
         data_objects = []
@@ -165,14 +190,14 @@ class Resolwe(object):
 
         """
         if process_name:
-            return self.api.processor.get(name=process_name)['objects']
+            return [p for p in self.api.process.get() if process_name in p['name']]
         else:
-            return self.api.processor.get()['objects']
+            return self.api.process.get()
 
-    def print_upload_processes(self):
+    def printad_processes(self):
         """Print all upload process names."""
-        for p in self.processess():
-            if p['name'].startswith('import:upload:'):
+        for p in self.processes():
+            if 'upload' in p['category']:
                 print(p['name'])
 
     def print_process_inputs(self, process_name):
@@ -226,13 +251,15 @@ class Resolwe(object):
         if resource not in ('data', 'collection', 'process', 'trigger', 'template'):
             raise ValueError(mgs='resource must be data, collection, process, trigger or template')
 
-        if resource == 'collection':
-            resource = 'case'
+        # if resource == 'collection':
+        #     resource = 'case'
+        #
+        # if resource == 'process':
+        #     resource = 'processor'
 
-        if resource == 'process':
-            resource = 'processor'
+        # Does it make any sense that someone could post processors? Or tiggers? Or templates?
 
-        url = urlparse.urljoin(self.url, '/api/v1/{}/'.format(resource))
+        url = urlparse.urljoin(self.url, '/api/{}'.format(resource))
         return requests.post(url,
                              data=data,
                              auth=self.auth,
@@ -243,7 +270,7 @@ class Resolwe(object):
                                  'referer': self.url,
                              })
 
-    def upload(self, collection_id, process_name, **fields):
+    def upload(self, process_name, collection_id, **fields):
         """Upload files and data objects.
 
         :param collection_id: ObjectId of Resolwe collection
@@ -255,6 +282,9 @@ class Resolwe(object):
         :rtype: HTTP Response object
 
         """
+        # This is temporary solution: map process name to it's ID:
+        proc_name_to_id = dict([(x['name'], x['id']) for x in self.processes()])
+
         p = self.processes(process_name=process_name)
 
         if len(p) == 1:
@@ -271,6 +301,7 @@ class Resolwe(object):
                     Exception("File {} not found".format(field_val))
 
         inputs = {}
+        name = "No idea for the name..."
 
         for field_name, field_val in fields.items():
             if find_field(p['input_schema'], field_name)['type'].startswith('basic:file:'):
@@ -280,20 +311,23 @@ class Resolwe(object):
                 if not file_temp:
                     Exception("Upload failed for {}".format(field_val))
 
+                file_name = ntpath.basename(field_val)
                 inputs[field_name] = {
-                    'file': field_val,
+                    'file': file_name,
                     'file_temp': file_temp
                 }
             else:
                 inputs[field_name] = field_val
 
         d = {
-            'status': 'uploading',
-            'case_ids': [collection_id],
-            'processor_name': process_name,
+            'status': 'uploading', # should it be uploaded?
+            'process': proc_name_to_id[process_name],
             'input': inputs,
+            'slug': str(uuid.uuid4()),
+            'name':[name],
         }
-
+        if collection_id:
+            d['collections'] = [collection_id]
         return self.create(d)
 
     def _upload_file(self, fn):
@@ -305,8 +339,8 @@ class Resolwe(object):
         :type fn: string
 
         """
-        size = os.path.getsize(fn)
-        counter = 0
+        file_size = os.path.getsize(fn)
+        chunk_number = 0
         base_name = os.path.basename(fn)
         session_id = str(uuid.uuid4())
 
@@ -318,21 +352,27 @@ class Resolwe(object):
                     break
 
                 for i in range(5):
-                    content_range = 'bytes {}-{}/{}'.format(counter * CHUNK_SIZE,
-                                                            counter * CHUNK_SIZE + len(chunk) - 1, size)
                     if i > 0 and response is not None:
-                        print("Chunk upload failed (error {}): repeating {}"
-                              .format(response.status_code, content_range))
+                        print("Chunk upload failed (error {}): repeating for chunk number {} ."
+                              .format(response.status_code, chunk_number))
 
                     response = requests.post(urlparse.urljoin(self.url, 'upload/'),
                                              auth=self.auth,
-                                             data=chunk,
+
+                                            # request are smart and make
+                                            #  'CONTENT_TYPE': 'multipart/form-data;''
+                                             files={'file':(base_name, chunk)},
+
+                                             # stuff in data will be present in response.POST on server
+                                             data={
+                                                '_chunkSize': CHUNK_SIZE,
+                                                '_totalSize': file_size,
+                                                '_chunkNumber': chunk_number,
+                                                '_currentChunkSize': len(chunk),
+                                            },
                                              headers={
-                                                 'Content-Disposition': 'attachment; filename="{}"'.format(base_name),
-                                                 'Content-Length': size,
-                                                 'Content-Range': content_range,
-                                                 'Content-Type': 'application/octet-stream',
-                                                 'Session-Id': session_id})
+                                                 'Session-Id': session_id}
+                                            )
 
                     if response.status_code in [200, 201]:
                         break
@@ -340,10 +380,10 @@ class Resolwe(object):
                     # Upload of a chunk failed (5 retries)
                     return None
 
-                progress = 100. * (counter * CHUNK_SIZE + len(chunk)) / size
-                sys.stdout.write("\r{:.0f} % Uploading {}".format(progress, fn))
+                progress = 100. * (chunk_number * CHUNK_SIZE + len(chunk)) / file_size
+                sys.stdout.write("\n{:.0f} % Uploaded {}".format(progress, fn))
                 sys.stdout.flush()
-                counter += 1
+                chunk_number += 1
         print()
         return session_id
 
@@ -366,7 +406,7 @@ class Resolwe(object):
                 raise ValueError("Invalid object id {}".format(o))
 
             if o not in self.cache['objects']:
-                self.cache['objects'][o] = Data(self.api.data(o).get(), self)
+                self.cache['objects'][o] = Data(self.ta(o).get(), self)
 
             if field not in self.cache['objects'][o].annotation:
                 raise ValueError("Download field {} does not exist".format(field))
@@ -383,28 +423,34 @@ class Resolwe(object):
 
 class ResAuth(requests.auth.AuthBase):
 
-    """Attach HTTP Resolwe Authentication to Request object."""
+    """
+    Attach HTTP Resolwe Authentication to Request object.
+
+    __init__ se pozene samo tkrat ko ustvaris ta objekt
+    __call__ se pa pozene vsakic ko ustvarjeni objekt poklices! Torej vedno razen prvic? tudi prvic?
+
+    """
 
     def __init__(self, email=DEFAULT_EMAIL, password=DEFAULT_PASSWD, url=DEFAULT_URL):
         payload = {
-            'email': email,
+            'username': email,
             'password': password
         }
 
         try:
-            request = requests.post(url + '/user/ajax/login/', data=payload)
+            response = requests.post(urlparse.urljoin(url, '/rest-auth/login/'), data=payload)
         except requests.exceptions.ConnectionError:
             raise Exception('Server not accessible on {}'.format(url))
 
-        if request.status_code == 403:
+        if response.status_code == 403:
             raise Exception('Invalid credentials.')
 
-        if not ('sessionid' in request.cookies and 'csrftoken' in request.cookies):
+        if not ('sessionid' in response.cookies and 'csrftoken' in response.cookies):
             raise Exception('Invalid credentials.')
 
-        self.sessionid = request.cookies['sessionid']
-        self.csrftoken = request.cookies['csrftoken']
-        self.subscribe_id = str(uuid.uuid4())
+        self.sessionid = response.cookies['sessionid']
+        self.csrftoken = response.cookies['csrftoken']
+        # self.subscribe_id = str(uuid.uuid4())
 
     def __call__(self, request):
         # modify and return the request
