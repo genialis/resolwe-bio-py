@@ -34,7 +34,7 @@ re = resolwe_bio.Resolwe(args.email, args.password, args.address)
 
 if args.r:
     for r in args.r:
-        r = re.upload(args.collection, 'import:upload:reads-fastq', src=r)
+        r = re.upload(process_name='import:upload:reads-fastq', collections=[args.collection], src=r)
 else:
     for r1, r2 in zip(args.r1, args.r2):
-        r = re.upload(args.collection, 'import:upload:reads-fastq-paired-end', src1=r1, src2=r2)
+        r = re.upload(process_name='import:upload:reads-fastq-paired-end', collections=[args.collection], src1=r1, src2=r2)

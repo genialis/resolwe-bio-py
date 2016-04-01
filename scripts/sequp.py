@@ -22,17 +22,17 @@ specified directory or any of its subdirectories. If both: reads and
 corresponding annotation files are present, upload the reads and set
 the initial annotation based on the annotation file.
 """
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
-from os.path import expanduser
-import time
-import fnmatch
+import appdirs
 import argparse
 import csv
+import fnmatch
+import os
+import sys
+import time
 
-import appdirs
+from os.path import expanduser
 
 import resolwe_api
 
@@ -69,6 +69,7 @@ parser.add_argument('-a', '--address', default=GENIALIS_URL, help='Resolwe serve
 parser.add_argument('-e', '--email', default=GENIALIS_EMAIL, help='User e-mail')
 parser.add_argument('-p', '--password', default=GENIALIS_PASS, help='User password')
 parser.add_argument('-d', '--directory', default=GENIALIS_SEQ_DIR, help='Observed directory with reads')
+parser.add_argument('-f', '--force', action='store_true', help='Force upload of all files')
 
 args = parser.parse_args()
 
@@ -77,16 +78,10 @@ GENIALIS_EMAIL = args.email
 GENIALIS_PASS = args.password
 GENIALIS_SEQ_DIR = os.path.normpath(os.path.join(os.getcwd(), args.directory))
 
-GENIALIS_URL = 'http://127.0.0.1:8000/'
-GENIALIS_EMAIL = 'admin'
-GENIALIS_PASS = 'admin'
-GENIALIS_SEQ_DIR = '/home/jure/genialis/resolwe_bio_py'
-
-
-print(GENIALIS_URL)
-print(GENIALIS_EMAIL)
-print(GENIALIS_PASS)
-print(GENIALIS_SEQ_DIR)
+print("Address:", GENIALIS_URL)
+print("User:", GENIALIS_EMAIL)
+print("Pass:", GENIALIS_PASS)
+print("Directory:", GENIALIS_SEQ_DIR)
 
 ###########################################################
 
@@ -97,15 +92,19 @@ print(GENIALIS_SEQ_DIR)
 # in CONFIG_DIR in ``user_data_dir`` as specified by appdirs package.
 # Multiple GENIALIS_SEQ_DIRs can be specified in the CONFIG_FILE.
 
+TS_FILE = os.path.join(appdirs.user_data_dir(CONFIG_DIR, AUTHOR), CONFIG_FILE)
+
+if args.force:
+    if os.path.isfile(TS_FILE):
+        os.remove(TS_FILE)
+        
 
 def get_timestamp():
     """Get the timestamp for GENIALIS_SEQ_DIR"""
-    ts_dir = appdirs.user_data_dir(CONFIG_DIR, AUTHOR)
-    ts_file = os.path.join(ts_dir, CONFIG_FILE)
     data = {}
     # if the file is present:
-    if os.path.isfile(ts_file):
-        with open(ts_file, "r") as f:
+    if os.path.isfile(TS_FILE):
+        with open(TS_FILE, "r") as f:
             for line in f:
                 parts = line.strip().split("\t")
                 data[parts[0]] = float(parts[1])
@@ -124,17 +123,15 @@ def get_timestamp():
 
 def set_timestamp(timestamp):
     """Set timestamp for GENIALIS_SEQ_DIR"""
-    ts_dir = appdirs.user_data_dir(CONFIG_DIR, AUTHOR)
-    ts_file = os.path.join(ts_dir, CONFIG_FILE)
-
+    
     def write_timestamp(pairs):
         """Write the timestamp into appropriate file"""
-        with open(ts_file, "w") as f:
+        with open(TS_FILE, "w") as f:
             for a, b in pairs.items():
                 f.write(str(a) + "\t" + str(b) + "\n")
 
     # If file exists, rewrite the contents of GENIALIS_SEQ_DIR
-    if os.path.isfile(ts_file):
+    if os.path.isfile(TS_FILE):
         pairs = get_timestamp()
         pairs[GENIALIS_SEQ_DIR] = timestamp
         write_timestamp(pairs)
@@ -142,7 +139,7 @@ def set_timestamp(timestamp):
     # If file does not exist, create file and put in the data
     else:
         try:
-            os.makedirs(ts_dir)
+            os.makedirs(os.path.dirname(TS_FILE))
             write_timestamp({GENIALIS_SEQ_DIR: timestamp})
         except OSError:
             # Folder already exists, just make the file:
@@ -210,35 +207,25 @@ def parse_annotation_file(annotation_file):
     Annotations for multiple files can be found in one annotation file.
     """
     anns = {}
-    delimiter = str('\t')
     # We use "rU" mode to be able to read also files with "\r" chars.
     with open(annotation_file, "rU") as f:
         try:
-            reader = csv.DictReader(f, delimiter=delimiter)
+            reader = csv.DictReader(f, delimiter=str('\t'))
             fieldnames = reader.fieldnames
-            ann = {}
+            
             # One line corresponds to one annotation (one reads file)
             for row in reader:
-                for field in fieldnames:
-                    # if there is a path to reads file, normalize it:
-                    if str(field) == str("FASTQ_PATH"):
-                        ann[field] = os.path.normpath(os.path.join(GENIALIS_SEQ_DIR, row[field]))
-                    else:
-                        ann[field] = row[field]
-                try:
-                    # Only include annotation if the "FASTQ_PATH"
-                    # represesents valid pathname
-                    if os.path.isfile(ann["FASTQ_PATH"]):
-                        anns[ann["FASTQ_PATH"]] = ann
-                except KeyError:
-                    # This pobably means that there is a file satifying
-                    # file extension but is not annotation file. Just
-                    # return empty distionary
-                    return {}
-
+                if 'FASTQ_PATH' in row:
+                    seqfile = os.path.normpath(os.path.join(GENIALIS_SEQ_DIR, row['FASTQ_PATH']))
+                    
+                    if os.path.isfile(seqfile):
+                        row['FASTQ_PATH'] = seqfile
+                        anns[seqfile] = row
+                 
         # If the file is binary, everything crashes... This can be optimized. :-)
         except csv.Error:
-            return {}
+            print("Binary files not supported", file=sys.stderr)
+            exit(1)
     return anns
 
 
@@ -254,24 +241,33 @@ for ann_file in all_annotation_files:
 # Get the connection with the server:
 re = resolwe_api.Resolwe(GENIALIS_EMAIL, GENIALIS_PASS, GENIALIS_URL)
 
-# This is currently still uploading to the old platform:
-collection_id = '1'
 # process_name = 'import:upload:reads-fastq'
 process_name = 'Upload NGS reads'
 
 # Upload all files in ``all_new_read_files_uploaded`` that have annotations.
 uploaded_files = []
 for fn in set(set(annotations.keys()) & set(all_new_read_files_uploaded)):
-    # If single and reads:
+    kwargs = {
+        'process_name': process_name,
+        'name': annotations[fn]['SAMPLE_NAME'],  
+        'src': fn,
+    }
+    
+    # Single and reads:
     if annotations[fn]["PAIRED_END"] != "Y":
-        response = re.upload(process_name, collection_id=collection_id, src=fn)
-        if response.ok:
-            uploaded_files.append(fn)
+        kwargs['src'] = fn
     # Paired and reads:
     else:
-        response = re.upload(collection_id, process_name, src1=fn, src2=annotations[fn]["FASTQ_PATH_PAIR"])
-        if response.ok:
-            uploaded_files.append(fn)
+        kwargs['src1'] = fn 
+        kwargs['src2'] = annotations[fn]["FASTQ_PATH_PAIR"]
+       
+    response = re.upload(**kwargs)
+    
+    if response.ok:
+        uploaded_files.append(fn)
+    else:
+        print("Error uploading {}".format(fn), file=sys.stderr)
+        print(response.text, file=sys.stderr)
 
 
 ###########################################################
