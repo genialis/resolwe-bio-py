@@ -344,6 +344,7 @@ class Resolwe(object):
         base_name = os.path.basename(fn)
         session_id = str(uuid.uuid4())
 
+        response = None
         with open(fn, 'rb') as f:
             while True:
                 response = None
@@ -385,7 +386,7 @@ class Resolwe(object):
                 sys.stdout.flush()
                 chunk_number += 1
         print()
-        return session_id
+        return response
 
     def download(self, data_objects, field):
         """Download files of data objects.
