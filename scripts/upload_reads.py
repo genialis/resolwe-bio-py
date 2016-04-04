@@ -26,6 +26,6 @@ if not (args.r or (args.r1 and args.r2)) or \
 re = resolwe_bio.Resolwe(args.email, args.password, args.address)
 
 if args.r:
-    r = re.upload(args.collection, 'import:upload:reads-fastq', src=args.r)
+    r = re.upload(process_name='import:upload:reads-fastq', collections=[args.collection], src=args.r)
 else:
-    r = re.upload(args.collection, 'import:upload:reads-fastq-paired-end', src1=args.r1, src2=args.r2)
+    r = re.upload(process_name='import:upload:reads-fastq-paired-end', collections=[args.collection], src1=args.r1, src2=args.r2)

@@ -270,11 +270,11 @@ class Resolwe(object):
                                  'referer': self.url,
                              })
 
-    def upload(self, process_name, collection_id, **fields):
+    def upload(self, process_name, name='', collections=[], **fields):
         """Upload files and data objects.
 
-        :param collection_id: ObjectId of Resolwe collection
-        :type collection_id: string
+        :param collections: Integer id of Resolwe collection
+        :type collections: List of int
         :param process_name: Processor object name
         :type process_name: string
         :param fields: Processor field-value pairs
@@ -301,7 +301,6 @@ class Resolwe(object):
                     Exception("File {} not found".format(field_val))
 
         inputs = {}
-        name = "No idea for the name..."
 
         for field_name, field_val in fields.items():
             if find_field(p['input_schema'], field_name)['type'].startswith('basic:file:'):
@@ -324,10 +323,11 @@ class Resolwe(object):
             'process': proc_name_to_id[process_name],
             'input': inputs,
             'slug': str(uuid.uuid4()),
-            'name':[name],
         }
-        if collection_id:
-            d['collections'] = [collection_id]
+
+        if len(collections) > 0:
+            d['collections'] = collections
+
         return self.create(d)
 
     def _upload_file(self, fn):
