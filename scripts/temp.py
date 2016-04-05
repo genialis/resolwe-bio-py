@@ -49,7 +49,7 @@ re = resolwe_api.Resolwe(email, passw, url)
 cid = 6
 process_name = 'Upload NGS reads'
 fname = '/home/jure/genialis/resolwe_bio_py/fastqs/20151231-shep21-0hr-twist-RZ2638_S4_R1_001.fastq'
-response = re.upload(process_name, collections=[cid], src=fname)
+response = re.upload(process_name, collections=[cid], src=fname, name='Test')
 print("-" * 30)
 print(response.content)
 print("-" * 30)

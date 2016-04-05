@@ -283,7 +283,7 @@ class Resolwe(object):
 
         """
         # This is temporary solution: map process name to it's ID:
-        proc_name_to_id = dict([(x['name'], x['id']) for x in self.processes()])
+        proc_name_to_id = dict([(x['name'], x['slug']) for x in self.processes()])
 
         p = self.processes(process_name=process_name)
 
@@ -319,14 +319,12 @@ class Resolwe(object):
                 inputs[field_name] = field_val
 
         d = {
-            'status': 'uploading', # should it be uploaded?
+            'status': 'uploading',  # should it be uploaded?
             'process': proc_name_to_id[process_name],
             'input': inputs,
             'slug': str(uuid.uuid4()),
+            'name': name,
         }
-
-        if len(collections) > 0:
-            d['collections'] = collections
 
         return self.create(d)
 
@@ -347,7 +345,6 @@ class Resolwe(object):
         response = None
         with open(fn, 'rb') as f:
             while True:
-                response = None
                 chunk = f.read(CHUNK_SIZE)
                 if not chunk:
                     break
@@ -374,7 +371,6 @@ class Resolwe(object):
                                              headers={
                                                  'Session-Id': session_id}
                                             )
-
                     if response.status_code in [200, 201]:
                         break
                 else:
@@ -386,7 +382,7 @@ class Resolwe(object):
                 sys.stdout.flush()
                 chunk_number += 1
         print()
-        return response
+        return response.json()['files'][0]['temp']
 
     def download(self, data_objects, field):
         """Download files of data objects.
