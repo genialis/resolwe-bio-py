@@ -37,6 +37,7 @@ if __name__ == '__main__':
         install_requires=(
             "requests>=2.6.0",
             "slumber>=0.7.1",
+            "appdirs>=1.4.0",
         ),
         extras_require = {
             'docs':  ['sphinx>=1.3.2'],
