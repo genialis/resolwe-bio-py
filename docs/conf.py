@@ -5,16 +5,15 @@ import os
 import shlex
 import sys
 
+import sphinx_rtd_theme
+
+
 base_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
 
-# Get package metadata from 'setup.py' file
-module_setup = imp.load_source('module_setup', os.path.join(base_dir, 'setup.py'))
-about = {
-    '__title__': module_setup.NAME,
-    '__version__': module_setup.VERSION,
-    '__author__': module_setup.AUTHOR,
-    '__copyright__': '2016, ' + module_setup.AUTHOR,
-}
+# Get package metadata from 'resolwe_api/__about__.py' file
+about = {}
+with open(os.path.join(base_dir, 'resolwe_api', '__about__.py')) as f:
+    exec(f.read(), about)
 
 # -- General configuration ------------------------------------------------
 
@@ -34,7 +33,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = about['__title__']
+project = 'Resolwe Bioinformatics Python API'
 version = about['__version__']
 release = version
 author = about['__author__']
@@ -61,6 +60,7 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.
 html_theme = 'sphinx_rtd_theme'
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Resolwebiopydoc'

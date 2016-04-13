@@ -270,7 +270,7 @@ class Resolwe(object):
                                  'referer': self.url,
                              })
 
-    def upload(self, process_name, name='', collections=[], **fields):
+    def upload(self, process_name, name='', descriptor=None, descriptor_schema=None, collections=[], **fields):
         """Upload files and data objects.
 
         :param collections: Integer id of Resolwe collection
@@ -325,6 +325,12 @@ class Resolwe(object):
             'slug': str(uuid.uuid4()),
             'name': name,
         }
+
+        if descriptor:
+            d['descriptor'] = descriptor
+
+        if descriptor_schema:
+            d['descriptor_schema'] = descriptor_schema
 
         if len(collections) > 0:
             d['collections'] = collections
