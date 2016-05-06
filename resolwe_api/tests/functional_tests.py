@@ -39,7 +39,7 @@ class UserTest(unittest.TestCase):
         self.assertIsInstance(upload_process[0], dict)
 
         # Test upload (consequently also _upload_file & create)
-        fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'example.fastq')
+        fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'files', 'example.fastq')
         re.upload('Upload NGS reads', name='name_abc', collections=[1], src=fn)
 
         # Test download:

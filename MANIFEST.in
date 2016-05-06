@@ -1,2 +1,2 @@
-include *.txt
-recursive-include docs *.txt
+include LICENSE
+recursive-include docs *

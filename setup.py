@@ -40,15 +40,17 @@ setup(
     license=about['__license__'],
 
     packages=find_packages(),
-    include_package_data=True,
+    package_data={
+        'resolwe_api': ['tests/files/*'],
+    },
+
     zip_safe=False,
-    package_data={},
     install_requires=(
         "requests>=2.6.0",
         "slumber>=0.7.1",
         "appdirs>=1.4.0",
     ),
-    extras_require = {
+    extras_require={
         'docs': [
             'sphinx>=1.4.1',
             'sphinx_rtd_theme>=0.1.9',
@@ -58,9 +60,12 @@ setup(
             'wheel',
         ],
         'test': [
+            'check-manifest',
             'coverage>=3.7.1',
+            'mock==1.3.0',
             'pep8>=1.6.2',
             'pylint>=1.4.3',
+            'readme_renderer',
         ],
     },
 
