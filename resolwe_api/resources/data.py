@@ -2,9 +2,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from .utils import iterate_schema
+from .base import BaseResource
 
 
-class Data(object):
+class Data(BaseResource):
     """
     Resolwe data object annotation.
     """
@@ -16,58 +17,25 @@ class Data(object):
     """
 
     def __init__(self, data, resolwe):
-        self.resolwe = resolwe
-        self.update(data)
+        BaseResource.__init__(self, data, resolwe)
 
     def update(self, data):
         """
-        Update the object with new data.
+        Update the Data object with new data.
 
-        :param data: Annotation data for data object
-        :type collection: dictionary
+        :param data: Annotation data for Data object
+        :type collection: dictionary (JSON that is received from restAPI)
 
         :rtype: None
-
         """
-
-        fields = [
-            'slug',
-            'name',
-            'contributor',
-            'input',
-            'output',
-            'descriptor_schema',
-            'descriptor',
-            'process',
-            'id',
-            'created',
-            'modified',
-            'started',
-            'finished',
-            'checksum',
-            'status',
-            'process_progress',
-            'process_rc',
-            'process_info',
-            'process_warning',
-            'process_error',
-            'process_type',
-            'process_input_schema',
-            'process_output_schema',
-            'process_name',
-            'permissions',
-        ]
+        BaseResource.update(self, data)
 
         self.annotation = {}
-        for field in fields:
-            setattr(self, field, data[field])
-
-        self.annotation.update(self._flatten_field(data['input'],
-                                                   data['process_input_schema'],
-                                                   'input'))
-        self.annotation.update(self._flatten_field(data['output'],
-                                                   data['process_output_schema'],
-                                                   'output'))
+        self.annotation.update(
+            self._flatten_field(data['input'], data['process_input_schema'], 'input'))
+        self.annotation.update(
+            self._flatten_field(data['output'], data['process_output_schema'], 'output'))
+        # TODO Descriptor schema!
 
     def _flatten_field(self, field, schema, path):
         """
@@ -92,11 +60,6 @@ class Data(object):
 
         return flat
 
-    def print_annotation(self):
-        """Print "key: value" pairs to standard output."""
-        for path, ann in self.annotation.items():
-            print("{}: {}".format(path, ann['value']))
-
     def get_download_list(self, verbose=False):
         """
         Get list of all downloadable fields
@@ -119,34 +82,17 @@ class Data(object):
                     dlist.append(ann['value']['file'])
         return dlist
 
-    def print_downloads(self):
-        """Print fields that can be downloaded to standard output."""
-        for path, ann in self.annotation.items():
-            if path.startswith('output') and ann['type'] == 'basic:file:':
-                print("{}: {}".format(path, ann['value']['file']))
-
-    def download(self, field):
-        """Download a file.
-
-        :param field: file field to download
-        :type field: string
-        :rtype: a file handle
-
+    def files(self, verbose=False):
         """
-        if not field.startswith('output'):
-            raise ValueError("Only processor results (output.* fields) can be downloaded")
+        Return list of files in resource.
+        """
+        # to ne bo ok za data!
+        file_list = self.resolwe.data.get(self.id).get_download_list(verbose=verbose)  # pylint: disable=no-member
+        return file_list
 
-        if field not in self.annotation:
-            raise ValueError("Download field {} does not exist".format(field))
-
-        ann = self.annotation[field]
-        if ann['type'] != 'basic:file:':
-            raise ValueError("Only basic:file: field can be downloaded")
-
-        return next(self.resolwe.download([self.id], field))
-
-    def __str__(self):
-        return self.name  # pylint: disable=no-member
-
-    def __repr__(self):
-        return u"Data: {} - {}".format(self.id, self.name)  # pylint: disable=no-member
+    def print_annotation(self):
+        """
+        Provide annotation data.
+        """
+        # TODO: Think of neat way to present all annotation. how this would be most neatly presented...
+        raise NotImplementedError()

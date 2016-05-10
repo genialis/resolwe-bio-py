@@ -15,10 +15,9 @@ from six.moves.urllib.parse import urljoin  # pylint: disable=import-error
 
 from requests.exceptions import ConnectionError  # pylint: disable=ungrouped-imports, redefined-builtin
 
-from .resources.data import Data
-from .resources.collection import Collection
-from .resources.sample import Sample
+from .resources import Data, Collection, Sample
 from .resources.utils import iterate_schema
+
 
 CHUNK_SIZE = 90000000
 DEFAULT_EMAIL = 'anonymous@genialis.com'

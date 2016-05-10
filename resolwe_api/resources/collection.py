@@ -1,57 +1,68 @@
 """Collection"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from .base import BaseResource
+from .data import Data
 
-class Collection(object):
+
+class BaseCollection(BaseResource):
+    """
+    Abstract class BaseCollection.
+    """
+
+    def __init__(self, collection_data, resolwe):
+        """
+        Abstract class BaseResource.
+        """
+        BaseResource.__init__(self, collection_data, resolwe)
+
+    def data_types(self):
+        """
+        Return a list of data types (process_type).
+
+        :rtype: List
+        """
+        return sorted(  # pylint: disable=no-member
+            set(self.resolwe.api.data(id_).get()['process_type'] for id_ in self.data))  # pylint: disable=no-member
+
+    def files(self, verbose=False):
+        """
+        Return list of files in resource.
+        """
+        file_list = []
+        for id_ in self.data:  # pylint: disable=no-member
+            file_list += Data(self.resolwe.api.data(id_).get(), self.resolwe).get_download_list(verbose=verbose)
+        return file_list
+
+    def print_annotation(self):
+        """
+        Provide annotation data.
+        """
+        raise NotImplementedError()
+
+
+class Collection(BaseCollection):
     """Resolwe collection annotation."""
 
     endpoint = 'collection'
 
     """Resolwe collection annotation."""
 
-    def __init__(self, ann_data, resolwe):
+    def __init__(self, collection_data, resolwe):
         """
         Resolwe collection annotation.
 
-        :param ann_data: Collection annotation - (field, value) pairs
-        :type ann_data: dictionary
+        :param collection_data: Annotation data for Collection
+        :type collection_data: dictionary (JSON from restAPI)
         :param resolwe: Resolwe instance
         :type resolwe: Resolwe object
         :rtype: None
 
         """
+        BaseCollection.__init__(self, collection_data, resolwe)
 
-        for field in ann_data:
-            setattr(self, field, ann_data[field])
-
-        self.resolwe = resolwe
-        self.id_ = getattr(self, 'id', None)
-        self.name = getattr(self, 'name', None)
-
-    def data_types(self):
+    def print_annotation(self):
         """
-        Return a list of data types.
-
-        :rtype: List
+        Provide annotation data.
         """
-        data = self.resolwe.collection_data(self.id_)
-        return sorted(set(d.type for d in data))
-
-    # TODO
-    def data(self, **query):
-        """Query for Data object annotation."""
-        data = self.resolwe.project_data(self.id_)
-        query['case_ids__contains'] = self.id_
-        ids = set(d['id'] for d in self.resolwe.api.dataid.get(**query)['objects'])
-        return [d for d in data if d.id in ids]
-
-    # TODO
-    def find(self, filter_str):
-        """Filter Data object annotation."""
         raise NotImplementedError()
-
-    def __str__(self):
-        return self.name or 'n/a'
-
-    def __repr__(self):
-        return u"Collection: {} - {}".format(self.id_, self.name)
