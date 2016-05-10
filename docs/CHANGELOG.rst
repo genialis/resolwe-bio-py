@@ -5,20 +5,34 @@ Change Log
 All notable changes to this project are documented in this file.
 
 
-==========
-Unreleased
-==========
+==================
+1.3.0 - 2016-05-10
+==================
 
 Changed
 -------
 
+* Add ``data``, ``sample``, ``collections`` to ``Resolwe`` class and create
+  ``ResolweQuerry`` class
+* Move ``data.py``, ``collections.py`` ... to ``resources`` folder
+* Remove ``collection``, ``collection_data`` and ``data`` methods from
+  ``Resolwe`` and from tests.
+
 Fixed
 -----
-* Sequp for paired-end data
+
+* ``Sequp`` for paired-end data
+* Pylint & PEP8 formatting
+* Packaging - add missing files and packages
 
 Added
 -----
 
+* Endpoints ``data``, ``sample`` and ``collections`` in ``Resolwe`` class
+* ``ResolweQuerry`` class with ``get`` and ``filter`` methods
+* ``Sample`` class with ``files`` and ``download`` methods
+* Tox configuration for running tests
+* Travis configuration for automated testing
 
 ==================
 1.2.0 - 2015-11-17
