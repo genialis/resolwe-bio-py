@@ -151,7 +151,7 @@ class BaseResource(object):
 
         elif type:
             data_type, output_field = None, None
-            if isinstance(type, six.string_types):
+            if isinstance(type, six.string_types) and type in DOWNLOAD_TYPES.keys():
                 # type is abbreviation (string)
                 data_type, output_field = DOWNLOAD_TYPES[type]
             elif isinstance(type, tuple) and len(type) == 2:
