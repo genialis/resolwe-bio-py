@@ -11,6 +11,7 @@ from mock import patch, MagicMock
 import requests
 
 from resdk.resolwe import Resolwe, ResAuth
+from resdk.resources import Data  # pylint: disable=unused-import
 from resdk.tests.mocks.data import PROCESS_SAMPLE
 
 if six.PY2:
@@ -79,12 +80,99 @@ class TestResolwePrintProcessInputs(unittest.TestCase):
         sys_mock.stdout.write.assert_called_with('src -> basic:file:\n')
 
 
+class TestResolweRegister(unittest.TestCase):
+
+    pass
+
+
+class TestResolweUploadTools(unittest.TestCase):
+
+    pass
+
+
+class TestResolweRun(unittest.TestCase):
+
+    @patch('resdk.resolwe.os', spec=True)
+    @patch('resdk.resolwe.Data', spec=True)
+    @patch('resdk.resolwe.Resolwe', spec=True)
+    def test_upload_file(self, resolwe_mock, data_mock, os_mock):
+
+        # Raise error is only one of deswcriptor/descriptor_schema is given:
+        msg = "Set both or neither descriptor and descriptor_schema"
+        with self.assertRaises(ValueError) as exc:
+            Resolwe.run(resolwe_mock, descriptor="a")
+        self.assertRegex(exc.exception.args[0], msg)  # pylint: disable=deprecated-method
+        with self.assertRaises(ValueError) as exc:
+            Resolwe.run(resolwe_mock, descriptor_schema="a")
+        self.assertRegex(exc.exception.args[0], msg)  # pylint: disable=deprecated-method
+
+        # Value error if process len is 0
+        process_json = []
+        resolwe_mock.api = MagicMock(**{'process.get.return_value': process_json})
+        msg = "Could not get process for given slug"
+        with self.assertRaises(ValueError) as exc:
+            Resolwe.run(resolwe_mock)
+        self.assertRegex(exc.exception.args[0], msg)  # pylint: disable=deprecated-method
+
+        # Value error if process len >1
+        process_json = ['process1', 'process2']
+        resolwe_mock.api = MagicMock(**{'process.get.return_value': process_json})
+        msg = r"Unexpected behaviour at get process with slug .*"
+        with self.assertRaises(ValueError) as exc:
+            Resolwe.run(resolwe_mock)
+        self.assertRegex(exc.exception.args[0], msg)  # pylint: disable=deprecated-method
+
+        # Bad file name
+        process_json = [
+            {'slug':
+                'some:prc:slug:',  # pylint: disable=bad-continuation
+             'input_schema':
+                [{"label": "NGS reads (FASTQ)",  # pylint: disable=bad-continuation
+                  "type": "basic:file:",
+                  "name": "src"}]}]
+        resolwe_mock.api = MagicMock(**{'process.get.return_value': process_json})
+        os_mock.path = MagicMock()
+        os_mock.path.isfile.return_value = False
+        msg = r"File .* not found."
+        with self.assertRaises(ValueError) as exc:
+            Resolwe.run(resolwe_mock, input={"src": "/bad/path/to/file"})
+        self.assertRegex(exc.exception.args[0], msg)  # pylint: disable=deprecated-method
+
+        # Kao good file, upload fails
+        os_mock.path.isfile.return_value = True
+        msg = r'Upload failed for .*'
+        resolwe_mock._upload_file = MagicMock(return_value=None)
+        with self.assertRaises(Exception) as exc:
+            Resolwe.run(resolwe_mock, input={"src": "/good/path/to/file"})
+        self.assertRegex(exc.exception.args[0], msg)  # pylint: disable=deprecated-method
+
+        # TODO: This doesn't do a thing: ???
+        # fields[field_name] = {
+        #     'file': file_name,
+        #     'file_temp': file_temp
+        # }
+
+        # All good:
+        resolwe_mock.api = MagicMock(**{
+            'process.get.return_value': process_json,
+            'data.post.return_value': "mdata"})
+        data_mock.return_value = "Data object"
+        data = Resolwe.run(resolwe_mock,
+                           src="123",
+                           tools="456")
+        self.assertEqual(len(resolwe_mock._register.mock_calls), 1)
+        self.assertEqual(len(resolwe_mock._upload_tools.mock_calls), 1)
+        self.assertEqual(len(resolwe_mock._upload_file.mock_calls), 1)
+        data_mock.assert_called_with(model_data='mdata', resolwe=resolwe_mock)
+        self.assertEqual(data, "Data object")
+
+
 class TestResolweUploadFile(unittest.TestCase):
 
     @patch('resdk.resolwe.requests')
     @patch('resdk.resolwe.sys')
     @patch('resdk.resolwe.Resolwe', spec=True)
-    def test_upload_file(self, resolwe_mock, sys_mock, requests_mock):
+    def test_run(self, resolwe_mock, sys_mock, requests_mock):
         # Example file:
         fn = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'files', 'example.fastq')
 

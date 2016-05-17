@@ -11,7 +11,7 @@ def iterate_fields(fields, schema):
 
     """
     schema_dict = {val['name']: val for val in schema}
-    for field_id, properties in fields.iteritems():
+    for field_id, properties in fields.items():
         if 'group' in schema_dict[field_id]:
             for _field_schema, _fields in iterate_fields(properties, schema_dict[field_id]['group']):
                 yield (_field_schema, _fields)
