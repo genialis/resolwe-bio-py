@@ -60,28 +60,21 @@ Quick Start
 
 Connect to a Resolwe server:
 
-.. code-block:: python
+.. literalinclude:: docs/files/resdk-example.py
+   :lines: 1-5
 
-   from resdk import Resolwe
-   res = Resolwe('admin', 'admin', 'https://torta.bcm.genialis.com')
-
-   # Activating default logging
-   resdk.start_logging()
+If you do not have access to the Resolwe server, contact us at
+info@genialis.com.
 
 Get sample by ID and download the aligned reads (BAM file):
 
-.. code-block:: python
-
-   sample = res.sample.get(1)
-   sample.download(type='bam')
+.. literalinclude:: docs/files/resdk-example.py
+   :lines: 7-8
 
 Find human samples and download all aligned reads (BAM files):
 
-.. code-block:: python
-
-   samples = res.sample.filter(descriptor__organism="Homo sapiens")
-   for sample in samples:
-       sample.download(type='bam')
+.. literalinclude:: docs/files/resdk-example.py
+   :lines: 10-12
 
 Primary analysis (*e.g.,* filtering, alignment, expression estimation)
 starts automatically when samples are annotated. A step in primary
@@ -90,42 +83,24 @@ A ``Sample`` object includes sample annotation. A ``Data`` object
 includes input parameters, results and analysis annotation. Print the
 steps in primary analysis pipeline:
 
-.. code-block:: python
-
-   sample = res.sample.get(1)
-   for data_id in sample.data:
-       data = res.data.get(data_id)
-       print data.process_name
+.. literalinclude:: docs/files/resdk-example.py
+   :lines: 14-17
 
 Find ROSE2 analysis results and download a super-enhancer rank plot of
 the first ROSE2 analysis Data object:
 
-.. code-block:: python
-
-   rose2_list = res.data.filter(type='data:chipseq:rose2:')
-   rose2 = rose2_list[0]
-   rose2.download(name='20150531-u266-A-H3K27Ac-ML1949_S2_R1_mapped_peaks_Plot_panel.png')
+.. literalinclude:: docs/files/resdk-example.py
+   :lines: 19-21
 
 Run Bowtie2 mapping on the reads ``Data`` object of the above sample:
 
-.. code-block:: python
-
-   genome = res.data.get('hg19')
-   genome_id = genome.id
-   reads_id = sample.data[0]
-   aligned = res.run('alignment-bowtie-2-2-3_trim', input={
-                         'genome': genome_id,
-                         'reads': reads_id,
-                         'reporting': {'rep_mode': 'k', 'k_reports': 1}
-                     })
-   aligned.status
+.. literalinclude:: docs/files/resdk-example.py
+   :lines: 23-31
 
 After a while you can check if the alignment has finished:
 
-.. code-block:: python
-
-   aligned.update()
-   aligned.status
+.. literalinclude:: docs/files/resdk-example.py
+   :lines: 33-34
 
 Continue in the `Getting Started`_ section of Documentation, where we
 explain how to upload files, create samples and provide details about
