@@ -5,6 +5,9 @@ Reference
 .. autoclass:: resdk.Resolwe
    :members:
 
+.. autoclass:: resdk.ResolweQuerry
+  :members:
+
 .. autoclass:: resdk.resources.Data
    :members:
 
