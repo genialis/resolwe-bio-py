@@ -148,14 +148,24 @@ class Data(BaseResource):
 
         """
         download_list = []
-        for file_field_name, ann in self.annotation.items():
-            if (file_field_name.startswith('output') and
-                    ann['type'].startswith('basic:file:') and
-                    ann['value'] is not None and
-                    (file_name is None or file_name == ann['value']['file']) and
-                    (field_name is None or field_name == file_field_name)):
 
-                download_list.append(ann['value']['file'])
+        def put_in_download_list(elm, fname):
+            """
+            If ``file_name`` is not None append only files with equal name.
+            """
+            if 'file' in elm:
+                if file_name is None or file_name == elm['file']:
+                    download_list.append(elm['file'])
+            else:
+                raise KeyError("Item {} does not contain 'file' key.".format(fname))
+
+        for ann_field_name, ann in self.annotation.items():
+            if ann_field_name.startswith('output') and (field_name is None or field_name == ann_field_name):
+                if ann['type'].startswith('basic:file:') and ann['value'] is not None:
+                    put_in_download_list(ann['value'], ann_field_name)
+                elif ann['type'].startswith('list:basic:file:') and ann['value'] is not None:
+                    for element in ann['value']:
+                        put_in_download_list(element, ann_field_name)
 
         return download_list
 

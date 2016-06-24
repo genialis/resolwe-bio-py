@@ -370,7 +370,7 @@ class TestDownload(unittest.TestCase):
     @patch('resdk.resolwe.Resolwe', spec=True)
     def test_fail_if_bad_dir(self, resolwe_mock, os_mock):
         resolwe_mock.configure_mock(**self.config)
-        os_mock.path.isfile.return_value = False
+        os_mock.path.isdir.return_value = False
 
         message = "Download directory does not exist: .*"
         with six.assertRaisesRegex(self, ValueError, message):
