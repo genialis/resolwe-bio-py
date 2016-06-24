@@ -68,7 +68,6 @@ def sequp():
 
     # Application data
     config_file = os.path.join(appdirs.user_data_dir(about.__title__, about.__author__), 'config')
-    print(config_file)
     # XXX: Increase to 1h
     change_time_window = 5
 
@@ -239,20 +238,20 @@ def sequp():
         if data:
             uploaded_files.append(fn)
 
-            sample = resolwe.api.sample.get(data=data.id)[0]
+            presample = resolwe.api.presample.get(data=data.id)[0]
 
-            if 'geo' not in sample['descriptor']:
-                sample['descriptor']['geo'] = {}
+            if 'geo' not in presample['descriptor']:
+                presample['descriptor']['geo'] = {}
 
             organism = ORGANISMS.get(annotations[fn]['ORGANISM'].upper(), '')
             if organism:
-                sample['descriptor']['geo']['organism'] = organism
+                presample['descriptor']['geo']['organism'] = organism
 
             experiment_type = EXPERIMENT_TYPE.get(annotations[fn]['SEQ_TYPE'].upper(), '')
             if experiment_type:
-                sample['descriptor']['geo']['experiment_type'] = experiment_type
+                presample['descriptor']['geo']['experiment_type'] = experiment_type
 
-            resolwe.api.sample(sample['id']).patch({'descriptor': sample['descriptor']})
+            resolwe.api.presample(presample['id']).patch({'descriptor': presample['descriptor']})
 
         else:
             print("Error uploading {}".format(fn), file=sys.stderr)
