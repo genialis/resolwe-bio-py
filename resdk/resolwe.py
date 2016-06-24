@@ -404,7 +404,7 @@ class Resolwe(object):
         if not download_dir:
             download_dir = os.getcwd()
 
-        if not os.path.isfile(download_dir):
+        if not os.path.isdir(download_dir):
             raise ValueError("Download directory does not exist: {}".format(download_dir))
 
         if len(files) == 0:
