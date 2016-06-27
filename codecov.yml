@@ -1,0 +1,10 @@
+# Custom configuration for Codecov.io
+#
+# For more details, see: https://github.com/codecov/support/wiki/codecov.yml
+
+coverage:
+    status:
+        patch:
+            default:
+                # Disable checking patch coverage for branches starting with 'fix'
+                branches: "!*:fix*"
