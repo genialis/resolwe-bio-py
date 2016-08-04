@@ -1,47 +1,62 @@
+.. _pipelines:
+
 =================
 Writing pipelines
 =================
 
-In :doc:`previous chapter<run>` we introduced how to run process
-with the ``run`` command. We define the process to execute on the
-server with the slug parameter (*i.e.* ``alignment-bowtie-2-2-3_trim``).
-The process has to be registered (installed) in the server, or the
+In :doc:`previous chapter<run>` we have shown how to run processes with
+the ``run`` command. We define the process to execute on the server
+with the slug parameter (*e.g.,* ``alignment-bowtie2``).
+The process has to be registered (installed) on the server, or the
 command will fail.
 
 .. code-block:: python
 
    import resdk
+
+   # Sign-in the Resolwe server
    res = resdk.Resolwe('admin', 'admin', 'https://torta.bcm.genialis.com')
 
-   genome = res.data.get('hg19')
-   sample = res.sample.get(1)
+   # Get the genome
+   genome = res.data.get('human-example-chr22-reads')
+
+   # Get a sample
+   sample = res.sample.get('')
+
+   # Access genome ID
    genome_id = genome.id
+
+   # Access the ID of the first data object on the sample
    reads_id = sample.data[0]
 
-   aligned = res.run('alignment-bowtie2', input={
+   # Run the Bowtie 2 read sequence alignment
+   aligned = res.run('alignment-bowtie2',
+                     input={
                          'genome': genome_id,
                          'reads': reads_id,
                          'reporting': {'rep_mode': 'k', 'k_reports': 1}
                      })
 
 This is great for running processes, but not so much for development.
-Developers want to modify the analysis process itself. Two arguments of
-the ``run`` method help developers overcome this challenge, ``src`` and
+Developers want to modify the analysis process. Two arguments of
+the ``run`` method help developers with this challenge: ``src`` and
 ``tools``. With the ``src`` argument, you can reference a local script
-with process definition. The process definition will first
-automatically register (install) on the server and then the algorithm
-would run. The code below allows just that. You can play with the
-Bowtie2 process locally (in the `bowtie.yml`_ file), but the process
-runs on the server:
+that contains process definition. The process definition will first
+automatically register (install) on the server and then the data object
+would be created and the process would run. The code shows an example.
+You can play with the Bowtie2 process locally (in `bowtie.yml`_
+file), but the process runs on the server.
 
 .. code-block:: python
    :emphasize-lines: 5
 
-   aligned = res.run('alignment-bowtie2', input={
+   aligned = res.run('alignment-bowtie2',
+                     input={
                          'genome': genome_id,
                          'reads': reads_id,
                          'reporting': {'rep_mode': 'k', 'k_reports': 1}
-                     }, src='bowtie.yml')
+                     },
+                     src='bowtie.yml')
 
 .. _bowtie.yml: https://github.com/genialis/resolwe-bio/blob/master/resolwe_bio/processes/alignment/bowtie.yml
 
@@ -60,8 +75,8 @@ commands.
 
    samtools sort "${FW_NAME}_align_unsorted.bam" "${FW_NAME}_align"
 
-Sometime you wish to write ad-hoc scripts and call them from processes.
-For instance, to post-process Bowtie results, we call
+Sometimes you may want to write *ad-hoc* scripts and call them from
+processes. For instance, to post-process the results of Bowtie, we call
 ``mergebowtiestats.py``.
 
 .. code-block:: bash
@@ -70,9 +85,9 @@ For instance, to post-process Bowtie results, we call
 
    mergebowtiestats.py $STATS
 
-Resolwe allows to place the ad-hoc scripts in a ``tools`` folder that
+Resolwe allows to place the *ad-hoc* scripts in a ``tools`` folder that
 is added to runtime PATH. The ``tools`` folder is on Resolwe server,
-so SDK helps you upload your ad-hoc scripts to the server automatically.
+so SDK helps you upload your *ad-hoc* scripts to the server automatically.
 Files are transfered via SCP, so you should have an SSH access to the
 Resolwe server. Also, you have to configure the `password-less
 authentication`_.
@@ -86,17 +101,20 @@ You have to tell the Resolwe SDK where to copy the files. Set the
 
    export TOOLS_REMOTE_HOST=<username>@torta.bcmt.bcm.edu://genialis/tools
 
-Now you can reference your ad-hoc scripts in the ``run`` command with
+Now you can reference your *ad-hoc* scripts in the ``run`` command with
 the tools argument:
 
 .. code-block:: python
    :emphasize-lines: 5
 
-   aligned = res.run('alignment-bowtie2', input={
+   aligned = res.run('alignment-bowtie2',
+                     input={
                          'genome': genome_id,
                          'reads': reads_id,
                          'reporting': {'rep_mode': 'k', 'k_reports': 1}
-                     }, src='bowtie.yml', tools=['mergebowtiestats.py'])
+                     },
+                     src='bowtie.yml',
+                     tools=['mergebowtiestats.py'])
 
 The tools folder is in the runtime PATH. If you wish to run your
 scripts in a Resolwe process, remember to make them executable (*e.g.,*
@@ -113,23 +131,21 @@ manually check if results are ready from time to time:
 
 .. code-block:: python
 
-   aligned.update()
-   print(aligned.status)
+   # Check the status of your data object
+   aligned.update(); aligned.status
 
 You can view the process' ``stdout`` to inspect if it runs as intended
 and debug errors:
 
 .. code-block:: python
 
+   # Print the process' standard output
    print(aligned.stdout())
 
 You can read how to write processes in YAML syntax in the
 `Writing processes`_ chapter of Resolwe Documentation. You should
-review which processes are already available in Resolwe Bioinformatics
-and what inputs they accept. This information is not yet included in
-`Resolwe Bio Documentation`_, but you can explore the
-`Resolwe Bio processes' source code`_.
+review which processes are already available in the `Process catalog`_
+and what inputs they accept.
 
 .. _Writing processes: http://resolwe.readthedocs.io/en/latest/proc.html
-.. _Resolwe Bio Documentation: http://resolwe-bio.readthedocs.io
-.. _Resolwe Bio processes' source code: https://github.com/genialis/resolwe-bio/tree/master/resolwe_bio/processes
+.. _Process catalog: http://resolwe-bio.readthedocs.io/en/latest/catalog.html

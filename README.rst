@@ -28,14 +28,13 @@ Resolwe SDK for Python
     :target: https://pypi.python.org/pypi/resdk
     :alt: Number of downloads from PyPI
 
-Resolwe_ is a dataflow package for the `Django framework`_.
-`Resolwe Bioinformatics`_ is an extension of Resolwe that provides
-bioinformatics pipelines. Resolwe SDK for Python supports writing
-dataflow pipelines for Resolwe and Resolwe Bioinformatics.
+Resolwe SDK for Python supports interaction with Resolwe_ server
+and its extension `Resolwe Bioinformatics`_. You can use it to upload
+and inspect biomedical data sets, contribute annotations, run
+analysis, and write pipelines.
 
 .. _Resolwe Bioinformatics: https://github.com/genialis/resolwe-bio
 .. _Resolwe: https://github.com/genialis/resolwe
-.. _Django framework: https://www.djangoproject.com/
 
 Docs & Help
 ===========
@@ -51,93 +50,38 @@ Install from PyPI::
 
   pip install resdk
 
-To install for development, `fork on Github`_ and run::
+If you would like to contribute to the SDK codebase, follow the
+`installation steps for developers`_.
 
-  git clone https://github.com/<GITHUB_USER>/resolwe-bio-py.git
-  cd resolwe-bio-py
-  pip install -e .[docs,package,test]
-
-.. _fork on Github: https://github.com/genialis/resolwe-bio-py
+.. _installation steps for developers: http://resdk.readthedocs.io/en/latest/contributing.html
 
 Quick Start
 ===========
 
-Connect to a Resolwe server:
+In this showcase we will download the aligned reads and their
+index (BAM and BAI) from the server:
 
 .. code-block:: python
 
    import resdk
+
+   # Create a Resolwe object to interact with the server
    res = resdk.Resolwe('admin', 'admin', 'https://torta.bcm.genialis.com')
 
-   # Recomended: start logging
+   # Print command details to stdout
    resdk.start_logging()
+
+   # Get sample meta-data from the server
+   sample = res.sample.get('human-example-chr22')
+
+   # Download files associated with the sample
+   sample.download()
+
+Both files (BAM and BAI) have downloaded to the working directory.
+Check them out. To learn more about the Resolwe SDK continue with
+`Getting started`_.
+
+.. _Getting started: http://resdk.readthedocs.io/en/latest/tutorial.html
 
 If you do not have access to the Resolwe server, contact us at
 info@genialis.com.
-
-Get sample by slug and download the aligned reads (BAM file):
-
-.. code-block:: python
-
-   sample = res.sample.get('primary_chor_142a2a4_h3k27ac')
-   sample.download(file_type='bam')
-
-Find human samples and download all aligned reads (BAM files):
-
-.. code-block:: python
-
-   samples = res.sample.filter(descriptor__organism="Homo sapiens")
-   for sample in samples:
-       sample.download(file_type='bam')
-
-Primary analysis (*e.g.,* filtering, alignment, expression estimation)
-starts automatically when samples are annotated. A step in primary
-analysis is represented as ``Data`` object, attached to the sample.
-A ``Sample`` object includes sample annotation. A ``Data`` object
-includes input parameters, results and analysis annotation. Print the
-steps in primary analysis pipeline:
-
-.. code-block:: python
-
-   sample = res.sample.get('primary_chor_142a2a4_h3k27ac')
-   for data_id in sample.data:
-       data = res.data.get(data_id)
-       print data.process_name
-
-Find ROSE2 analysis results and download a super-enhancer rank plot of
-the first ROSE2 analysis Data object:
-
-.. code-block:: python
-
-   rose2_list = res.data.filter(type='data:chipseq:rose2:')
-   rose2 = rose2_list[0]
-   rose2.download(name='20150531-u266-A-H3K27Ac-ML1949_S2_R1_mapped_peaks_Plot_panel.png')
-
-Run Bowtie2 mapping on the reads ``Data`` object of the above sample:
-
-.. code-block:: python
-
-   genome = res.data.get('hg19')
-   genome_id = genome.id
-   reads_id = sample.data[0]
-   aligned = res.run('alignment-bowtie2', input={
-                         'genome': genome_id,
-                         'reads': reads_id,
-                         'reporting': {'rep_mode': 'k', 'k_reports': 1}
-                     })
-   aligned.status
-
-After a while you can check if the alignment has finished:
-
-.. code-block:: python
-
-   aligned.update()
-   aligned.status
-
-Continue in the `Getting Started`_ section of Documentation, where we
-explain how to upload files, create samples and provide details about
-the Resolwe backend. Bioinformaticians can learn how to develop
-pipelines in `Writing Pipelines`_.
-
-.. _Getting Started: http://resdk.readthedocs.io/en/latest/intro.html
-.. _Writing Pipelines: http://resdk.readthedocs.io/en/latest/pipelines.html

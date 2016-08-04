@@ -1,54 +1,66 @@
+.. _run:
+
 =============================
 Upload data and run pipelines
 =============================
 
-So far we were only inspecting data: accessing information and
+So far we were been inspecting data: accessing information and
 downloading files. Here we explain how to upload new data and run
 data analytics pipelines.
 
 The obvious way to start the analysis is to upload some data to Resolwe.
-We will do that by using process of type upload. It may sound strange at
-first, but uploading the data to Resolwe is exactly the same as running
-any other process. We have inputs - path to some file on our local
-computer, an algorithm (some file transfer protocol) and output -
-reference to a file freshly uploaded on Resolwe server.
+We do that with `upload processes`_. To upload the data
+we run the same commands as for running other analysis processes.
+We have inputs (path to some file on our local
+computer), an algorithm (to pre-process the input files) and
+output (a reference to the file that was just uploaded).
+
+.. _`upload processes`: http://resolwe-bio.readthedocs.io/en/latest/catalog.html#upload
 
 There are many upload processes, since there are many different types
-of files that can be uploaded. How to find all possible upload
-processes? Well, using the knowledge from previous chapter:
+of files we can upload. Where to get information about existing
+processes? You can browse the `Process catalog`_ or use the SDK:
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 63
+.. _`Process catalog`: http://resolwe-bio.readthedocs.io/en/latest/catalog.html
 
-Method run
-==========
+.. literalinclude:: files/example_run.py
+   :lines: 3-4
 
-Uploading file to Resolwe is as easy as:
+The run method
+==============
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 65-66
+Uploading files to Resolwe is done with a single command. You can
+download example NGS read files here: `forward read pair`_,
+`reverse read pair`_.
+
+.. _`forward read pair`: https://torta.bcm.genialis.com/data/553/reads_paired_abyss_1.fastq.gz?force_download=1
+.. _`reverse read pair`: https://torta.bcm.genialis.com/data/553/reads_paired_abyss_2.fastq.gz?force_download=1
+
+.. literalinclude:: files/example_run.py
+   :lines: 6-11
 
 As you can see, we have provided just process ``slug`` and ``input``
-parameters. What the method returns is a data object (in our case,
-called ``reads``). After uploading reads, we may want to assemble
-them with *Abyss*:
+parameters. What the method returns is a data object (here we call it
+``reads``). After the upload reads, we may want to assemble
+those NGS sequences with *Abyss*:
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 68-69
+.. literalinclude:: files/example_run.py
+   :lines: 13-18
 
-Here you see how to include a data object that is already uploaded on
-Resolwe - with it's id.
+Here you see how to use a data object that is already uploaded on
+Resolwe---by its id.
 
-You probably noticed that we get the result almost instantly, while
-typical assembling process can last multiple hours. This is because all
+You probably noticed that we get the result almost instantly, while the
+typical assembling process runs for hours. This is because
 processing runs asynchronously, so the returned data object does not
 have an OK status or outputs when returned. Use
-``assembled_reads.update()`` to refresh the information. Also, to
-estimate remaining time ``assembled_reads.process_progress`` can be
-useful.
+``assembled_reads.update()`` to refresh the information. You can
+access the progress report with ``assembled_reads.process_progress``.
 
-From the documentation of method :any:`run <Resolwe.run>` we see how
-to run process in general::
+The documentation of the :any:`run <Resolwe.run>` method tells us how
+to run a process in general:
+
+.. code-block:: python
 
     result = res.run(slug=None,
                      input={},
@@ -59,49 +71,48 @@ to run process in general::
                      src=None,
                      tools=None)
 
-Each of the parameters will be described in it own sub-section
+The parameters will be described in the following sections.
 
 Slug
 ----
 
-The first agrument is the slug of process to use. You can find process
-slug by using methods ``get()`` end ``filter()`` browsing the process
-endpoint.
+The first argument is the slug of process. Slug is a human readable
+unique identifier. You can find the process slug with methods
+``get()`` end ``filter()`` on the ``process`` endpoint.
 
 Input
 -----
 
-As seen in the upper example, inputs are given with dictionary of
-``"input_name":input_value`` key-value pairs. But how to know what are
-all the possible inputs for a given process? Well, this is excactly
-what input schema is for - it defines the names and types of inputs
-for given process:
+As seen in the upper example, inputs are given with a dictionary of
+``"input_name":input_value`` pairs. But how to know what are
+the possible inputs for a given process? Well, this is exactly
+what input schema is for---it defines the names and types of inputs
+for a given process:
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 71
+.. literalinclude:: files/example_run.py
+   :lines: 20-21
 
-The output may not be most visually intuitive so this image may help
-to recognize the structure:
+The output may not be visually intuitive so this image will help
+explain the structure:
 
 .. figure:: images/input_schema.jpg
    :width: 60 %
 
-   Each ``input_schema`` is a *list* of *dictionaries* - in this case
-   there are 5 of them. Each dictionary contains three mandatory keys:
-   ``name``, ``label`` and ``type``. As you will notice there are also
-   some optional fields. This holds true for all dictionaries in
-   ``input_schema``, except for the ones containing the ``group`` key.
-   As the names suggests, this is just a way to pack a group of inputs
-   together, one level lower in hierarchy. Typically these are
-   flags/parameters for the command line programs used in process's
+   An ``input_schema`` is a *list* of *dictionaries*---in this case
+   there are 5 of them. Each dictionary contains three mandatory fields:
+   ``name``, ``label`` and ``type``, and some optional fields. This
+   the case for all dictionaries in the ``input_schema``, except for
+   those with the ``group`` key. The group key organizes a set of
+   inputs, one level lower in hierarchy. Typically, these are flags
+   and parameters for the command line programs used in the process'
    algorithm.
 
 A handy function when inspecting process inputs is ``print_inputs()``:
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 73
+.. literalinclude:: files/example_run.py
+   :lines: 23-24
 
-The output tries to give a quick reference in the form of
+The output is a quick reference in the form of
 ``- name [type] - label``. Each input corresponds to one line and
 ``group`` inputs are indented to make a clear separation from the top
 level inputs.
@@ -109,49 +120,51 @@ level inputs.
 Descriptor schema and descriptor
 --------------------------------
 
-When creating data object (uploading reads, for example), you can
-optionally provide a ``descriptor_schema`` and a ``descriptor``.
-Descriptor_schema is just a schema - similar to input_schema or
-output_schema. It defines how the descriptor should look like. If you
-provide these two, Resolwe will create a *sample* with the annotation
-defined in descriptor. It will also include the created data object
-(uploaded reads) in the sample. Additionally, all data objects derived
-from reads, will be also automatically included in the same sample.
-in this way, organization of data objects is handled automatically.
+When creating a data object (*e.g.,* uploading reads), you can
+provide a ``descriptor_schema`` and a ``descriptor``.
+The descriptor_schema defines how the descriptor should look like. If
+you provide these the descriptor and descriptor_schema, Resolwe will
+create a *sample* with the annotation defined in descriptor. It will
+also include the created data object (uploaded reads) in the sample.
+Additionally, all data objects derived from reads, will be
+automatically included in the same sample.
 
 Collections
 -----------
 
 If you would like to include the data object in a certain collection,
-this is the place to do it. Provide a list of collection id's and the
+this is the place to do it. Provide a list of collection IDs and the
 data object will be included in all of them.
 
 Data name
 ---------
 
-Process defines what will be the name of it's outputs by itself.
-However, if you would like to manually set the name of created data
+If you would like to manually set the name of the created data
 object, provide it with the ``data_name`` parameter.
 
 Src and tools
 -------------
 
-These are used only when developing your own processes. To know more
-about that, continue on :doc:`writing pipelines. </pipelines>`
+These are used only when developing your own processes. More
+about that is in the :ref:`pipelines` chapter.
 
 -----------------------------------------------------------------------
 
-Now that we know how the handle all the parameters, lets create a
+Now that we know how the handle the parameters, lets create a
 data object with ful set of parameters:
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 75-93
+.. literalinclude:: files/example_run.py
+   :lines: 26-53
 
-What was just done?
+What just happened?
 
-* A data object which will use process ``assembler-abyss`` was created.
-* Process will use single-end reads from data object ``reads``, the name of the assembler output files will be ``blah_blah`` and the assembler will use the flags ``k`` and ``n`` with values 20 and 30 respectively.
-* We provided the descriptor schema and descriptor with some basic sample information.
+* A data object was created what triggered the execution of the
+  ``assembler-abyss`` process.
+* Process will use single-end reads from data object ``reads``, the
+  name of the assembler output files will be ``blah_blah`` and the
+  assembler will use the flags ``k`` and ``n`` with values 20 and 30.
+* We provided the descriptor schema and descriptor with some basic
+  sample information.
 * Data object will be included in collections 1 and 2.
 * Data object name was set to "my_favourite_name".
 
@@ -160,22 +173,22 @@ Solving problems
 
 Sometimes the data object will not have an "OK" status. In such case,
 it is helpful to be able to check what went wrong (and where).
-Method :any:`stdout <resdk.resources.Data.stdout>` for data objects
-can be really helpful in such cases - it saves the standard output of
-data object's algorithm and returns it as a string:
+The :any:`stdout <resdk.resources.Data.stdout>` method on data objects
+can help---it returns the standard output of the data object
+(as string).
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 96-99
+.. literalinclude:: files/example_run.py
+   :lines: 55-62
 
-Also, inpecting info, warning and error logs can be useful:
+Also, you can inspect the info, warning and error logs.
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 101-103
+.. literalinclude:: files/example_run.py
+   :lines: 64-71
 
 -----------------------------------------------------------------------
 
-This should get you started, but for more info regarding Resolwe in
-general, visit `Resolwe documentation.`_
+This should get you started. For more information about Resolwe visit
+`Resolwe documentation.`_ Let's continue with :ref:`pipelines`.
 
 .. _`Resolwe documentation.`: http://resolwe.readthedocs.io/en/latest/
 

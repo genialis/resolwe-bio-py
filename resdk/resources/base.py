@@ -76,7 +76,11 @@ class BaseResource(object):
                                  "have access permission.".format(id))
         elif slug:
             resources = self.api.get(slug=slug)
-            if len(resources) != 1:
+
+            if len(resources) > 1:
+                # Return the latest version
+                resources.sort(key=lambda resource: resource['version'], reverse=True)
+            elif len(resources) < 1:
                 raise ValueError("Slug '{}' does not exist or you do not "
                                  "have access permission.".format(slug))
 

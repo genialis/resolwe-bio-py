@@ -1,3 +1,5 @@
+.. _contributing:
+
 ============
 Contributing
 ============
@@ -5,8 +7,8 @@ Contributing
 Installing prerequisites
 ========================
 
-Make sure you have Python_ (2.7 or 3.4+) installed on your system. If you don't
-have it yet, follow `these instructions
+Make sure you have Python_ (2.7 or 3.4+) installed on your system. If
+you don't have it yet, follow `these instructions
 <https://docs.python.org/3/using/index.html>`__.
 
 .. _Python: https://www.python.org/

@@ -62,7 +62,7 @@ class TestBaseResource(unittest.TestCase):
     @patch('resdk.resources.base.BaseResource', spec=True)
     def test_slug_value_error(self, base_mock, getattr_mock):
         base_mock.configure_mock(endpoint="this_is_string")
-        getattr_mock.return_value = MagicMock(**{'get.return_value': [123, 456]})
+        getattr_mock.return_value = MagicMock(**{'get.return_value': []})
         message = r"Slug '\w+' does not exist or you do not have access permission."
         with six.assertRaisesRegex(self, ValueError, message):
             BaseResource.__init__(base_mock, slug="a", resolwe=self.resolwe_mock)
@@ -75,6 +75,10 @@ class TestBaseResource(unittest.TestCase):
         getattr_mock.return_value = MagicMock(**{'get.return_value': [123]})
         BaseResource.__init__(base_mock, slug="a", resolwe=self.resolwe_mock)
         base_mock._update_fields.assert_called_once_with(123)
+
+        getattr_mock.return_value = MagicMock(**{'get.return_value': [{'version': 1}, {'version': 2}]})
+        BaseResource.__init__(base_mock, slug="a", resolwe=self.resolwe_mock)
+        self.assertEqual(base_mock._update_fields.call_count, 2)
 
     @patch('resdk.resources.base.getattr')
     @patch('resdk.resources.base.BaseResource', spec=True)

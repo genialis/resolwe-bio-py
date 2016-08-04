@@ -1,6 +1,6 @@
-=========
-Reference
-=========
+=============
+SDK Reference
+=============
 
 .. automodule:: resdk.resolwe
 

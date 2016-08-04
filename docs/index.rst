@@ -5,14 +5,13 @@
 Resolwe SDK for Python
 ======================
 
-Resolwe_ is a dataflow package for the `Django framework`_.
-`Resolwe Bioinformatics`_ is an extension of Resolwe that provides
-bioinformatics pipelines. Resolwe SDK for Python supports writing
-dataflow pipelines for Resolwe and Resolwe Bioinformatics.
+Resolwe SDK for Python supports interaction with Resolwe_ server
+and its extension `Resolwe Bioinformatics`_. You can use it to upload
+and inspect biomedical data sets, contribute annotations, run
+analysis, and write pipelines.
 
 .. _Resolwe Bioinformatics: https://github.com/genialis/resolwe-bio
 .. _Resolwe: https://github.com/genialis/resolwe
-.. _Django framework: https://www.djangoproject.com/
 
 Install
 =======
@@ -21,22 +20,21 @@ Install from PyPI::
 
   pip install resdk
 
-To install for development, `fork on Github`_ and run::
-
-  git clone https://github.com/<GITHUB_USER>/resolwe-bio-py.git
-  cd resolwe-bio-py
-  pip install -e .[docs,package,test]
-
-.. _fork on Github: https://github.com/genialis/resolwe-bio-py
+If you would like to contribute to the SDK code base, follow the
+:ref:`installation steps for developers <contributing>`.
 
 Usage example
 =============
 
-Connect to a Resolwe server, get sample by ID and download the
-aligned reads (BAM file):
+In this showcase we will download the aligned reads and their
+index (BAM and BAI) from the server:
 
-.. literalinclude:: files/resdk-example.py
-   :lines: 1-8
+.. literalinclude:: files/example_index.py
+   :lines: 1-13
+
+Both files (BAM and BAI) have downloaded to the working directory.
+Check them out. To learn more about the Resolwe SDK continue with
+:ref:`tutorial`.
 
 If you do not have access to the Resolwe server, contact us at
 info@genialis.com.
@@ -47,9 +45,9 @@ Documentation
 .. toctree::
    :maxdepth: 2
 
+   tutorial
    intro
    run
    pipelines
-   tutorial
    ref
    contributing
