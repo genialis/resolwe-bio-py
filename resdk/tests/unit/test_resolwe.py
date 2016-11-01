@@ -272,6 +272,15 @@ class TestRun(unittest.TestCase):
         resolwe_mock._process_file_field.assert_called_once_with('/path/to/file')
 
     @patch('resdk.resolwe.Resolwe', spec=True)
+    def test_keep_input(self, resolwe_mock):
+        resolwe_mock.api = MagicMock(**{'process.get.return_value': self.process_json,
+                                        'data.post.return_value': {}})
+
+        input_dict = {"src_list": ["/path/to/file"]}
+        Resolwe.run(resolwe_mock, input=input_dict)
+        self.assertEqual(input_dict, {"src_list": ["/path/to/file"]})
+
+    @patch('resdk.resolwe.Resolwe', spec=True)
     def test_bad_descriptor_input(self, resolwe_mock):
         # Raise error is only one of deswcriptor/descriptor_schema is given:
         message = "Set both or neither descriptor and descriptor_schema."

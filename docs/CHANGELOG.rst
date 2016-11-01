@@ -18,6 +18,8 @@ Fixed
 -----
 * Fix ``files`` and ``download`` methods in ``collection`` resource to
   work with hydrated list of Data objects
+* Original value of ``input`` parameter is kept when running ``run``
+  funtion
 
 
 ==================
