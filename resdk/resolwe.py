@@ -13,6 +13,7 @@ Resolwe
 """
 from __future__ import absolute_import, division, print_function
 
+import copy
 import os
 import uuid
 import ntpath
@@ -294,6 +295,7 @@ class Resolwe(object):
             raise ValueError("Unexpected behaviour at get process with slug {}".format(slug))
 
         # Pre-process inputs
+        input = copy.deepcopy(input)  # leave original intact
         try:
             for schema, fields in iterate_fields(input, process['input_schema']):
                 field_name = schema['name']
