@@ -72,6 +72,7 @@ setup(
             'resolwe-sequp = resdk.scripts:sequp',
             'resolwe-upload-reads = resdk.scripts:upload_reads',
             'resolwe-update-kb = resdk.scripts:update_knowledge_base',
+            'resolwe-upload-vcsrvy = resdk.scripts:upload_vaccinesurvey_data',
         ],
     },
 
