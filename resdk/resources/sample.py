@@ -91,6 +91,7 @@ class Sample(SampleUtilsMixin, BaseCollection):
     def update_descriptor(self, descriptor):
         """Update descriptor and descriptor_schema."""
         self.api(self.id).patch({'descriptor': descriptor})
+        self.descriptor = descriptor
 
     def confirm_is_annotated(self):
         """Mark sample as annotated (descriptor is completed)."""
@@ -111,7 +112,7 @@ class Sample(SampleUtilsMixin, BaseCollection):
         background_relation = list(background_relation)
 
         if len(background_relation) > 1:
-            raise RuntimeError(
+            raise LookupError(
                 "More than one background is defined for sample '{}'".format(self.name)
             )
         elif len(background_relation) == 1:

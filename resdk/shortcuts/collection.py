@@ -65,7 +65,7 @@ class CollectionRelationsMixin(object):
         if label:
             relation_data['label'] = label
 
-        self.resolwe.relation.create(**relation_data)
+        return self.resolwe.relation.create(**relation_data)
 
     def _update_relation(self, id_, relation_type, samples, positions=[], label=None,
                          relation=None):
@@ -103,7 +103,7 @@ class CollectionRelationsMixin(object):
         :param str label: Optional label of the relation (i.e.
             ``replicates``)
         """
-        self._create_relation('group', samples, positions, label)
+        return self._create_relation('group', samples, positions, label)
 
     def create_compare_relation(self, samples, positions=[], label=None):
         """Create compare relation.
@@ -115,7 +115,7 @@ class CollectionRelationsMixin(object):
         :param str label: Optional label of the relation (i.e.
             ``case-control``)
         """
-        self._create_relation('compare', samples, positions, label)
+        return self._create_relation('compare', samples, positions, label)
 
     def create_series_relation(self, samples, positions=[], label=None):
         """Create series relation.
@@ -127,7 +127,7 @@ class CollectionRelationsMixin(object):
         :param str label: Optional label of the relation (i.e.
             ``time-series``)
         """
-        self._create_relation('series', samples, positions, label)
+        return self._create_relation('series', samples, positions, label)
 
     def create_background_relation(self, sample, background):
         """Create compare relation with ``background`` label.
@@ -140,7 +140,7 @@ class CollectionRelationsMixin(object):
         :param background: Background sample
         :type background: int or `~resdk.resources.sample.Sample`
         """
-        self.create_compare_relation(
+        return self.create_compare_relation(
             samples=[sample, background],
             positions=['sample', 'background'],
             label='background'

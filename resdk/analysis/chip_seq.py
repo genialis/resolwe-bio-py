@@ -68,8 +68,10 @@ def macs(resource, use_background=True, p_value=None):
                 inputs['pvalue'] = p_value
 
             if use_background:
-                if is_background(sample):
-                    continue  # don't run process on the background sample
+                if is_background(sample) and not is_sample(single_resource):
+                    # Don't run process on the background sample,
+                    # but let it fail if it is run directly on sample
+                    continue
 
                 background = sample.get_background(**background_filter)
                 inputs['control'] = background.get_bam().id
@@ -139,8 +141,10 @@ def rose2(resource, use_background=True, genome='HG19', tss=None, stitch=None, b
                 inputs['stitch'] = stitch
 
             if use_background:
-                if is_background(sample):
-                    continue  # don't run process on the background sample
+                if is_background(sample) and not is_sample(single_resource):
+                    # Don't run process on the background sample,
+                    # but let it fail if it is run directly on sample
+                    continue
 
                 background = sample.get_background(**background_filter)
                 inputs['control'] = background.get_bam().id
