@@ -1,8 +1,8 @@
 """Process resource."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .utils import _print_input_line
 from .base import BaseResource
+from .utils import _print_input_line
 
 
 class Process(BaseResource):

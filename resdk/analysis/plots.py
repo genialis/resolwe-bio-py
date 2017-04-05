@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from resdk.resources.utils import get_data_id, get_resolwe, get_samples, is_collection, is_relation
 
-
 __all__ = ('bamplot', )
 
 

@@ -5,11 +5,10 @@ import json
 import logging
 
 import requests
-
 from six.moves.urllib.parse import urljoin  # pylint: disable=import-error
 
-from .utils import iterate_schema
 from .base import BaseResource
+from .utils import iterate_schema
 
 
 class Data(BaseResource):

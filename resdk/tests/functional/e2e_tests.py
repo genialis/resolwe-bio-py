@@ -8,8 +8,7 @@ import uuid
 import six
 
 import resdk
-from resdk.resources import Data, Collection, Sample, Process
-
+from resdk.resources import Collection, Data, Process, Sample
 
 EMAIL = 'admin'
 PASSW = 'admin'

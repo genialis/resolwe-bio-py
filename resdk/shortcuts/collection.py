@@ -1,11 +1,12 @@
 """ReSDK Resolwe shortcuts."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from collections import defaultdict
 import copy
 import os
-import yaml
+from collections import defaultdict
+
 import six
+import yaml
 from six.moves import zip_longest
 
 from resdk.resources.utils import get_sample_id

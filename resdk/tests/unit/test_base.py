@@ -7,8 +7,7 @@ import unittest
 
 import six
 import slumber
-
-from mock import patch, MagicMock, call
+from mock import MagicMock, call, patch
 
 from resdk.resources import Collection
 from resdk.resources.base import BaseResource

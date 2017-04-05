@@ -39,8 +39,8 @@ Utility functions
 
 from .collection import Collection
 from .data import Data
-from .sample import Sample
 from .process import Process
 from .relation import Relation
+from .sample import Sample
 
 __all__ = ('Collection', 'Data', 'Sample', 'Process')
