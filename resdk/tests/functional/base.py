@@ -52,6 +52,22 @@ class BaseResdkFunctionalTest(unittest.TestCase):
             **collections
         )
 
+    def get_gtf(self, collection=None):
+        """Return gff3 data object.
+
+        :param colection: If defined, data object will be add to given
+            collections.
+        :type collection: None, int or `~resdk.resources.Collection`
+        """
+        gtf_path = os.path.join(FILES_PATH, 'dummy_gtf.gtf')
+        collections = {'collections': [collection]} if collection else {}
+
+        return self.res.run(
+            'upload-gtf',
+            input={'src': gtf_path, 'source': 'NCBI'},
+            **collections
+        )
+
     def get_reads(self, count=1, collection=None):
         """Return reads data objects.
 
@@ -120,3 +136,31 @@ class BaseResdkFunctionalTest(unittest.TestCase):
         bams = self.get_bams(count, collection)
 
         return macs([bam.sample for bam in bams], use_background=False)
+
+    def get_cuffquants(self, count=1, collection=None):
+        """Return cuffquant data objects.
+
+        :param int count: number of objects to return
+        :param colection: If defined, data object will be add to given
+            collections.
+        :type collection: None, int or `~resdk.resources.Collection`
+        """
+        cuffquant_path = os.path.join(FILES_PATH, 'dummy_cuffquant.cxb')
+        collections = {'collections': [collection]} if collection else {}
+
+        cuffquants = []
+        for _ in range(count):
+            cuffquant = self.res.run(
+                'upload-cxb',
+                input={'src': cuffquant_path, 'source': 'NCBI'},
+                **collections
+            )
+
+            cuffquants.append(cuffquant)
+
+            # TODO: Remove this when samples are automatically added to
+            #       the collection in resolwe
+            if collection:
+                collection.add_samples(cuffquant.sample)
+
+        return cuffquants
