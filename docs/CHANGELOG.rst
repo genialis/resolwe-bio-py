@@ -13,6 +13,9 @@ Added
 * Support ``tags`` in ``Sample`` and ``Data`` resources
 * Support running macs on more organisms (`drosophila melanogaster`,
   `caenorhabditis elegans` and `rattus norvegicus`)
+* ``isort`` linter
+* E2E tests for ``cuffquant`` and ``cuffnorm``
+* Automatically run E2E tests on Genialis' Jenkins
 
 Changed
 -------
