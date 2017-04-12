@@ -15,6 +15,7 @@ Added
   `caenorhabditis elegans` and `rattus norvegicus`)
 * ``isort`` linter
 * E2E tests for ``cuffquant`` and ``cuffnorm``
+* Automatically run E2E tests on Genialis' Jenkins
 
 Changed
 -------
