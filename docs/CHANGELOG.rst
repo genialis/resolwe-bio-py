@@ -28,6 +28,7 @@ Changed
 Fixed
 -----
 * Samples in relations are sorted in the same order as positions
+* Utility function for running bamliquidator process
 
 
 ==================

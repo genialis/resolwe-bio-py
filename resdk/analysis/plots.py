@@ -1,7 +1,11 @@
 """Plot analysis."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from resdk.resources.utils import get_data_id, get_resolwe, get_samples, is_collection, is_relation
+from operator import xor
+
+from resdk.resources.utils import (
+    get_data_id, get_resolwe, get_samples, is_collection, is_data, is_relation
+)
 
 __all__ = ('bamplot', )
 
@@ -121,3 +125,77 @@ def bamplot(resource, genome, input_gff=None, input_region=None, stretch_input=N
         resource.collection.add_data(bamplot_obj)
 
     return bamplot_obj
+
+
+def bamliquidator(resource, bin_size=None, regions=None, cell_type=None, extension=None,
+                  sense=None, skip_plot=None, black_list=None, threads=None):
+    """Run ``bamliquidator`` on the resource.
+
+    This method runs `bamliquidator`_ with bams, bin size and regions
+    files specified in arguments.
+
+    .. _bamliquidator:
+        http://resolwe-bio.readthedocs.io/en/latest/catalog-definitions.html#process-bamliquidator
+
+    TODO
+    """
+    if not xor(bin_size, regions):
+        raise KeyError('Exactly one of `bin_size` and `regions` parameters must be given.')
+
+    if regions and not is_data(regions):
+        raise KeyError('`regions` parameter must be data object.')
+
+    input_objects = []
+
+    bams = [sample.get_bam() for sample in get_samples(resource)]
+    input_objects.extend(bams)
+    bams = [get_data_id(bam) for bam in bams]
+
+    inputs = {
+        'bam': bams,
+    }
+
+    if bin_size:
+        inputs['analysis_type'] = 'bin'
+        inputs['bin_size'] = bin_size
+    else:  # regions
+        if regions.process_type == 'data:annotation:gtf:':
+            inputs['analysis_type'] = 'gtf'
+        elif regions.process_type == 'data:bed:':
+            inputs['analysis_type'] = 'bed'
+        else:
+            raise KeyError(
+                '`regions` object must be of type `data:annotation:gtf:` or `data:bed:`'
+            )
+
+        input_objects.append(regions)
+        inputs['regions_file_gtf'] = get_data_id(regions)
+
+    if cell_type is not None:
+        inputs['cell_type'] = cell_type
+
+    if extension is not None:
+        inputs['extension'] = extension
+
+    if sense is not None:
+        inputs['sense'] = sense
+
+    if skip_plot is not None:
+        inputs['skip_plot'] = skip_plot
+
+    if black_list is not None:
+        inputs['black_list'] = black_list
+
+    if threads is not None:
+        inputs['threads'] = threads
+
+    resolwe = get_resolwe(*input_objects)
+
+    bamliquidator_obj = resolwe.get_or_run(slug='bamliquidator', input=inputs)
+
+    if is_collection(resource):
+        resource.add_data(bamliquidator_obj)
+    elif is_relation(resource):
+        resource.collection.add_data(bamliquidator_obj)
+
+    return bamliquidator_obj
