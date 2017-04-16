@@ -10,12 +10,15 @@ import os
 import time
 import zipfile
 
+from datetime import datetime
+
 import appdirs
 import slumber
 
 from . import __about__ as about
 from . import resdk_logger
 from . import Resolwe
+from .resources import Sample
 
 
 ORGANISMS = {
@@ -481,3 +484,74 @@ def update_knowledge_base():
         logger.warning("Encountered {} errors during import.".format(errors))
 
     logger.info("Updated {} features.".format(updated))
+
+
+def upload_vaccinesurvey_data():
+    """
+    Upload vaccinesurvey samples from a .tsv file.
+
+    Usage::
+
+        resolwe-upload-vcsrvy -a www.genialis.com -e admin -p admin -f data.csv
+
+    """
+    parser = argparse.ArgumentParser(description="Upload vaccinesurvey samples")
+    parser.add_argument('-f', '--file', required=True, help='File with data')
+    parser.add_argument('-a', '--address', help='Resolwe server address')
+    parser.add_argument('-e', '--email', default='admin', help='User name')
+    parser.add_argument('-p', '--password', default='admin', help='User password')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose reporting')
+
+    args = parser.parse_args()
+
+    if args.verbose:
+        resdk_logger.start_logging()
+
+    res = Resolwe(args.email, args.password, args.address)
+
+    strings = ['study_code', 'sex', 'ethnicity']
+    ints = ['village_code']
+    floats = ['body_temp']
+    dates = ['birth_date', 'entry_date']
+    booleans = ['fever', 'antimalaria_treatment', 'hospital_visit', 'vomit',
+                'cough', 'diarrhoea', 'bednet']
+    immunological = ['ama1', 'msp1', 'msp2', 'nanp', 'total_ige', 'haemoglobin']
+
+    with open(args.file, 'rt') as ofile:
+        header = next(ofile).strip().split('\t')
+        for line_ in ofile:
+            descriptor = {'sample': {'annotator': args.email, 'immunological_data': {}}}
+            line = map(str, line_.strip().split('\t'))
+            try:
+                for col_name, col_value in zip(header, line):
+
+                    # Temporary fix for gender assignment (1=men, 2=women)
+                    if col_name == 'sex' and col_value in ['1', '2']:
+                        col_value = 'man' if col_value == '1' else 'woman'
+
+                    # Temporary fix if entry_date is missing
+                    if col_name == 'entry_date' and not col_value:
+                        col_value = datetime.now().date().strftime('%Y-%m-%d')
+
+                    if col_name in strings:
+                        descriptor['sample'][col_name] = col_value
+                    elif col_name in ints:
+                        descriptor['sample'][col_name] = int(col_value)
+                    elif col_name in floats:
+                        descriptor['sample'][col_name] = float(col_value)
+                    elif col_name in dates:
+                        descriptor['sample'][col_name] = col_value
+                    elif col_name in booleans:
+                        descriptor['sample'][col_name] = True if col_value == '1' else False
+                    elif col_name in immunological:
+                        descriptor['sample']['immunological_data'][col_name] = float(col_value)
+
+                sample = Sample(resolwe=res)
+                sample.descriptor_schema = 'sample-vaccinesurvey'
+                sample.descriptor = descriptor
+                sample.name = descriptor['sample']['study_code']
+                sample.save()
+                sample.confirm_is_annotated()
+            except ValueError:
+                print("Invalid sample: {}".format(line[0]))
+                raise
