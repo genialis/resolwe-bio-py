@@ -6,11 +6,10 @@ Unit tests for resdk/exceptions.py file.
 import unittest
 
 import six
-
 from mock import MagicMock
 from slumber.exceptions import SlumberHttpBaseException
 
-from resdk.exceptions import handle_http_exception, ResolweServerError
+from resdk.exceptions import ResolweServerError, handle_http_exception
 
 
 class ExceptionsTestCase(unittest.TestCase):

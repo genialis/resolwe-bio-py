@@ -1,7 +1,6 @@
 """Help text for Relations YAML file."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-
 RELATIONS_HELP = '''\
 # This file is a representation of relations between samples in
 # '{collection_name}' collection.

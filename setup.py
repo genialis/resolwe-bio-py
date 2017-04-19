@@ -6,10 +6,10 @@ Resolwe SDK for Python
 See: https://github.com/genialis/resolwe-bio-py
 
 """
-from setuptools import setup, find_packages
 from codecs import open  # Use codecs' open for a consistent encoding
 from os import path
 
+from setuptools import find_packages, setup
 
 base_dir = path.abspath(path.dirname(__file__))
 
@@ -58,6 +58,7 @@ setup(
         ],
         'test': [
             'check-manifest',
+            'isort',
             'mock==1.3.0',
             'pycodestyle>=2.1.0',
             'pydocstyle>=1.0.0',

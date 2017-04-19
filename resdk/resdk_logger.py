@@ -66,11 +66,10 @@ convention for logging in resdk: "Exceptions are explicitly logged
 only when they are caught and not re-raised."
 
 """
-import sys
 import logging
+import sys
 
 from six import string_types
-
 
 LEVEL_MAP = {"DEBUG": logging.DEBUG,
              "INFO": logging.INFO,

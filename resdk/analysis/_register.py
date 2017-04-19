@@ -1,13 +1,11 @@
 """Patch ReSDK resources with analysis methods."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from resdk.resources import Collection, Relation, Sample
-
 from resdk.analysis.alignment import bowtie2, hisat2
 from resdk.analysis.chip_seq import macs, rose2
 from resdk.analysis.expressions import cuffnorm, cuffquant
 from resdk.analysis.plots import bamplot
-
+from resdk.resources import Collection, Relation, Sample
 
 Collection.run_bamplot = bamplot
 Collection.run_bowtie2 = bowtie2

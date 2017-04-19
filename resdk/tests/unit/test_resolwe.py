@@ -3,24 +3,23 @@ Unit tests for resdk/resolwe.py file.
 """
 # pylint: disable=missing-docstring, protected-access
 
-import os
 import io
+import os
 import unittest
-import six
 
-from mock import patch, MagicMock, mock_open
 import requests
+import six
 import slumber
-from slumber.exceptions import SlumberHttpBaseException
 import yaml
+from mock import MagicMock, mock_open, patch
+from slumber.exceptions import SlumberHttpBaseException
 
-from resdk.exceptions import ValidationError, ResolweServerError
+from resdk import resolwe
+from resdk.exceptions import ResolweServerError, ValidationError
 from resdk.resolwe import (
-    Resolwe, ResAuth, ResolweResource, version_str_to_tuple, version_tuple_to_str
+    ResAuth, Resolwe, ResolweResource, version_str_to_tuple, version_tuple_to_str,
 )
 from resdk.resources import Collection, Data, Process
-from resdk import resolwe
-
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
