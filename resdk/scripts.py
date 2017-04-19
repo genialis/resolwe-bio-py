@@ -14,9 +14,7 @@ import appdirs
 import slumber
 
 from . import __about__ as about
-from . import resdk_logger
-from . import Resolwe
-
+from . import Resolwe, resdk_logger
 
 ORGANISMS = {
     'HUMAN': 'Homo sapiens',

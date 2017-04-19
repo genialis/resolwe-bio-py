@@ -7,6 +7,4 @@ recursive-include docs/images *.jpg *.png
 # include tests and files needed by tests
 include .pylintrc tox.ini
 recursive-include resdk/tests *.py
-recursive-include resdk/tests/files *.yml *.yaml
-recursive-include resdk/tests/files *.py
-recursive-include resdk/tests/files *.fastq *.fastq.gz
+recursive-include resdk/tests/files *

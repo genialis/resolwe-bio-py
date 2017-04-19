@@ -3,8 +3,8 @@ Unit tests for resdk/query.py file.
 """
 # pylint: disable=missing-docstring, protected-access
 
-from collections import defaultdict
 import unittest
+from collections import defaultdict
 
 from mock import MagicMock
 

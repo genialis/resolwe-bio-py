@@ -6,16 +6,14 @@ Unit tests for resdk/resources/utils.py file.
 import unittest
 
 import six
+from mock import MagicMock, call, patch
 
-from mock import MagicMock, patch, call
-
-from resdk.resources import Collection, Data, Sample, Process, Relation
+from resdk.resources import Collection, Data, Process, Relation, Sample
 from resdk.resources.utils import (
-    _print_input_line, endswith_colon, iterate_fields, iterate_schema, find_field, fill_spaces,
-    get_collection_id, get_data_id, get_sample_id, get_process_id, get_relation_id, get_resolwe,
-    get_resource_collection, get_samples
+    _print_input_line, endswith_colon, fill_spaces, find_field, get_collection_id, get_data_id,
+    get_process_id, get_relation_id, get_resolwe, get_resource_collection, get_sample_id,
+    get_samples, iterate_fields, iterate_schema,
 )
-
 
 PROCESS_OUTPUT_SCHEMA = [
     {'name': "fastq", 'type': "basic:file:", 'label': "Reads file"},

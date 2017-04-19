@@ -6,8 +6,7 @@ Unit tests for resdk/resources/collection.py file.
 import unittest
 
 import six
-
-from mock import patch, MagicMock
+from mock import MagicMock, patch
 
 from resdk.resources.collection import BaseCollection, Collection
 from resdk.resources.sample import Sample

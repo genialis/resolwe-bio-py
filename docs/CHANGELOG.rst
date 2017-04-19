@@ -11,12 +11,24 @@ Unreleased
 Added
 -----
 * Support ``tags`` in ``Sample`` and ``Data`` resources
-* Support running macs on more organisms (`drosophila melanogaster`, 
+* Support running macs on more organisms (`drosophila melanogaster`,
   `caenorhabditis elegans` and `rattus norvegicus`)
+* ``isort`` linter
+* E2E tests for ``cuffquant`` and ``cuffnorm``
+* Automatically run E2E tests on Genialis' Jenkins
+
+Changed
+-------
+* Update E2E tests
+* ``rose2`` and ``macs`` functions fail if they are run on a single
+  sample with ``use_background=True`` and there is no background for
+  that sample
+* ``create_*_relation`` functions return created relation
 
 Fixed
 -----
 * Samples in relations are sorted in the same order as positions
+* Utility function for running bamliquidator process
 
 
 ==================

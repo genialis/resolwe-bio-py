@@ -2,11 +2,15 @@
 Resolwe SDK for Python
 ======================
 
-|build| |coverage| |docs| |pypi_version| |pypi_pyversions|
+|build| |build-e2e| |coverage| |docs| |pypi_version| |pypi_pyversions|
 
 .. |build| image:: https://travis-ci.org/genialis/resolwe-bio-py.svg?branch=master
     :target: https://travis-ci.org/genialis/resolwe-bio-py
     :alt: Build Status
+
+.. |build-e2e| image:: https://ci.genialis.com/buildStatus/icon?job=genialis-github/resolwe-bio-py/master
+    :target: https://ci.genialis.com/job/genialis-github/job/resolwe-bio-py/job/master/
+    :alt: Build (End-to-End) Status
 
 .. |coverage| image:: https://img.shields.io/codecov/c/github/genialis/resolwe-bio-py/master.svg
     :target: http://codecov.io/github/genialis/resolwe-bio-py?branch=master

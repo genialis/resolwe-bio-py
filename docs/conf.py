@@ -7,7 +7,6 @@ import sys
 
 import sphinx_rtd_theme
 
-
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # Get package metadata from 'resdk/__about__.py' file

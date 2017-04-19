@@ -11,27 +11,27 @@ Resolwe
 from __future__ import absolute_import, division, print_function
 
 import copy
+import logging
+import ntpath
 import os
 import re
-import uuid
-import ntpath
-import logging
 import subprocess
+import uuid
 
-import yaml
 import requests
+import slumber
+import yaml
 # Needed because we mock requests in test_resolwe.py
 from requests.exceptions import ConnectionError  # pylint: disable=redefined-builtin
-import slumber
 from six.moves.urllib.parse import urljoin  # pylint: disable=import-error
 
-from .exceptions import handle_http_exception, ValidationError
-from .resources import Data, Collection, Sample, Process, Relation
+from .exceptions import ValidationError, handle_http_exception
+from .query import ResolweQuery
+from .resources import Collection, Data, Process, Relation, Sample
 from .resources.kb import Feature, Mapping
 from .resources.utils import (
-    iterate_fields, iterate_schema, endswith_colon, get_collection_id, get_data_id)
-from .query import ResolweQuery
-
+    endswith_colon, get_collection_id, get_data_id, iterate_fields, iterate_schema,
+)
 
 CHUNK_SIZE = 8000000  # 8MB
 DEFAULT_URL = 'http://localhost:8000'
