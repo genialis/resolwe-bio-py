@@ -127,23 +127,37 @@ def bamplot(resource, genome, input_gff=None, input_region=None, stretch_input=N
     return bamplot_obj
 
 
-def bamliquidator(resource, bin_size=None, regions=None, cell_type=None, extension=None,
-                  sense=None, skip_plot=None, black_list=None, threads=None):
+def bamliquidator(resource, analysis_type, cell_type=None, bin_size=None, regions_gtf=None, regions_bed=None,
+                  extension=None, sense=None, skip_plot=None, black_list=None, threads=None):
     """Run ``bamliquidator`` on the resource.
 
-    This method runs `bamliquidator`_ with bams, bin size and regions
-    files specified in arguments.
+    This method runs `bamliquidator`_ with bams, where three different
+    analysis type options are possible: Bin mode, Region mode and BED
+    mode.
 
     .. _bamliquidator:
         http://resolwe-bio.readthedocs.io/en/latest/catalog-definitions.html#process-bamliquidator
 
-    TODO
-    """
-    if not xor(bin_size, regions):
-        raise KeyError('Exactly one of `bin_size` and `regions` parameters must be given.')
+    :param list resource: resource from which bam objects will be get
+    :param str analysis_type: selet analysis type (bin, region or bed)
+    :param str cell_type: the name of cell type will be given in counts
+        tables
+    :param int bin_size: number of base pairs in each bin. Default is
+        100000 (possible for Bin mode).
+    :param regions_gtf: id of annotation file is given
+        (possible for Region mode)
+    :param regions_bed: id of bed file is given
+        (possible for Bed mode)
+    :param int extension: Extends reads by number of bp. Default is 200.
+    :param str sense: Mapping strand to gff file. Use '+' for forwaed,
+        '-' for reverse and '.' for both. Defoult is both.
+    :param bool skip_plot: True for skip plot.
+    :param list str black_list: One or more chromosome patterns to skip
+        during bin liquidation. Default is to skip any chromosomes that
+        contain any of the following substrings chrUn _random Zv9_ _hap.
+    :param int threads: Number of CPUs
 
-    if regions and not is_data(regions):
-        raise KeyError('`regions` parameter must be data object.')
+    """
 
     input_objects = []
 
@@ -153,26 +167,20 @@ def bamliquidator(resource, bin_size=None, regions=None, cell_type=None, extensi
 
     inputs = {
         'bam': bams,
+        'analysis_type': analysis_type
     }
-
-    if bin_size:
-        inputs['analysis_type'] = 'bin'
-        inputs['bin_size'] = bin_size
-    else:  # regions
-        if regions.process_type == 'data:annotation:gtf:':
-            inputs['analysis_type'] = 'gtf'
-        elif regions.process_type == 'data:bed:':
-            inputs['analysis_type'] = 'bed'
-        else:
-            raise KeyError(
-                '`regions` object must be of type `data:annotation:gtf:` or `data:bed:`'
-            )
-
-        input_objects.append(regions)
-        inputs['regions_file_gtf'] = get_data_id(regions)
 
     if cell_type is not None:
         inputs['cell_type'] = cell_type
+
+    if bin_size is not None:
+        inputs['bin_size'] = bin_size
+
+    if regions_gtf is not None:
+        inputs['regions_gtf'] = get_data_id(regions_gtf)
+
+    if regions_bed is not None:
+        inputs['regions_bed'] = get_data_id(regions_bed)
 
     if extension is not None:
         inputs['extension'] = extension
