@@ -223,7 +223,7 @@ class ResolweQuery(object):
         return self.resource(model_data=data, resolwe=self.resolwe)
 
     def _fetch(self):
-        """"Make request to the server and populate cache."""
+        """Make request to the server and populate cache."""
         if self._cache is not None:
             return  # already fetched
 

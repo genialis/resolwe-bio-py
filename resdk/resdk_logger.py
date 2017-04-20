@@ -102,7 +102,7 @@ STDOUT_HANDLER.setFormatter(FORMATTER1)
 
 def _configure_handler(handler, is_on=None, level=None):
     """
-    Helper function for configuring handlers.
+    Configure handlers.
 
     If parameter is not provided, it's value will not change.
 
