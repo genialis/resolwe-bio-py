@@ -9,6 +9,10 @@ All notable changes to this project are documented in this file.
 Unreleased
 ==========
 
+Changed
+-------
+* Change ``macs14`` helper function to work on unannotated samples
+
 Fixed
 -----
 * Fix register in ``<resolwe>.run`` function to work with processes
