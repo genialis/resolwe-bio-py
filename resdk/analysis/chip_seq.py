@@ -17,19 +17,6 @@ def is_background(sample):
     return len(background_relations) > 0
 
 
-def gsize_organism(name):
-    """Return genome size of organisms used in sample descriptor."""
-    mapping = {
-        'homo sapiens': '2.7e9',
-        'mus musculus': '1.87e9',
-        'dictyostelium discoideum': '3.4e7',
-        'drosophila melanogaster': '1.2e8',
-        'caenorhabditis elegans': '9e7',
-        'rattus norvegicus': '2e9',
-    }
-    return mapping[name.lower()]
-
-
 def macs(resource, use_background=True, p_value=None):
     """Run ``MACS 1.4`` process on the resource.
 
@@ -37,8 +24,7 @@ def macs(resource, use_background=True, p_value=None):
     arguments and ``bam`` file from the sample.
 
     If ``use_background`` argument is set to ``True``, ``bam`` file from
-    background sample is passed to the process as the control. Mappable
-    genome size is taken from the sample annotation.
+    background sample is passed to the process as the control.
 
     .. _MACS 1.4:
         http://resolwe-bio.readthedocs.io/en/latest/catalog-definitions.html#process-macs14
@@ -67,11 +53,6 @@ def macs(resource, use_background=True, p_value=None):
 
         for sample in get_samples(single_resource):
             inputs['treatment'] = sample.get_bam().id
-
-            try:
-                inputs['gsize'] = gsize_organism(sample.descriptor['sample']['organism'])
-            except KeyError:
-                raise KeyError('{} is not annotated'. format(sample))
 
             if use_background:
                 if is_background(sample) and not is_sample(single_resource):
