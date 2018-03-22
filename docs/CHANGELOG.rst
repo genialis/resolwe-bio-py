@@ -9,6 +9,11 @@ All notable changes to this project are documented in this file.
 Unreleased
 ==========
 
+Added
+-----
+* Add ``upload_and _annotate`` command line tool and the annotation
+  spreadsheet template
+
 
 ==================
 3.0.0 - 2018-02-21

@@ -47,6 +47,7 @@ setup(
         'six>=1.10.0',
         'pyyaml>=3.11',
         'wrapt>=1.10.8',
+        'xlrd>=1.1.0',
     ),
     extras_require={
         'docs': [
@@ -73,6 +74,7 @@ setup(
         'console_scripts': [
             'resolwe-sequp = resdk.scripts:sequp',
             'resolwe-upload-reads = resdk.scripts:upload_reads',
+            'resolwe-upload-and-annotate = resdk.scripts:upload_and_annotate',
         ],
     },
 
