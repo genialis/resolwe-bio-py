@@ -9,6 +9,10 @@ All notable changes to this project are documented in this file.
 Unreleased
 ==========
 
+Added
+-----
+* Add ``annotate`` and ``export_annotation`` functions for collections
+
 
 ==================
 4.0.0 - 2018-04-18

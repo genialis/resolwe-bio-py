@@ -47,6 +47,7 @@ setup(
         'six>=1.10.0',
         'pyyaml>=3.11',
         'wrapt>=1.10.8',
+        'openpyxl>=2.5.3',
     ),
     extras_require={
         'docs': [
