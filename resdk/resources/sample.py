@@ -19,7 +19,7 @@ class SampleUtilsMixin(object):
 
     def get_bam(self):
         """Return ``bam`` object on the sample."""
-        return self.data.get(type='data:alignment:bam:')
+        return self.data.get(type='data:alignment:bam')
 
     def get_primary_bam(self, fallback_to_bam=False):
         """Return ``primary bam`` object on the sample.
@@ -30,7 +30,7 @@ class SampleUtilsMixin(object):
 
         """
         try:
-            return self.data.get(type='data:alignment:bam:primary:')
+            return self.data.get(type='data:alignment:bam:primary')
         except LookupError:
             if fallback_to_bam:
                 return self.get_bam()
@@ -39,11 +39,11 @@ class SampleUtilsMixin(object):
 
     def get_macs(self):
         """Return list of ``bed`` objects on the sample."""
-        return self.data.filter(type='data:chipseq:macs14:')
+        return self.data.filter(type='data:chipseq:macs14')
 
     def get_cuffquant(self):
         """Return ``cuffquant`` object on the sample."""
-        return self.data.get(type='data:cufflinks:cuffquant:')
+        return self.data.get(type='data:cufflinks:cuffquant')
 
 
 class Sample(SampleUtilsMixin, BaseCollection):

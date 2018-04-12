@@ -243,8 +243,8 @@ def sequp():
                 if exp_type:
                     descriptor['experiment_type'] = exp_type
             # Paired-end reads
-            if (annotations[sample_n]['PAIRED_END'] == 'Y' and
-                    annotations[sample_n]['FASTQ_PATH_PAIR']):
+            if (annotations[sample_n]['PAIRED_END'] == 'Y'
+                    and annotations[sample_n]['FASTQ_PATH_PAIR']):
                 rw_reads = annotations[sample_n]['FASTQ_PATH_PAIR'].split(',')
                 slug = 'upload-fastq-paired'
                 input_['src1'] = fw_reads
