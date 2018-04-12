@@ -73,8 +73,8 @@ done
             print("\nERROR: Incorrect file path(s).\n")
             exit(1)
     else:
-        if (all(os.path.isfile(file) for file in args.r1) and
-                all(os.path.isfile(file) for file in args.r2)):
+        if (all(os.path.isfile(file) for file in args.r1)
+                and all(os.path.isfile(file) for file in args.r2)):
             resolwe.run('upload-fastq-paired', {'src1': args.r1, 'src2': args.r2},
                         collections=args.collection)
         else:

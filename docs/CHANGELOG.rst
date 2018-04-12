@@ -12,6 +12,7 @@ Unreleased
 Fixed
 -----
 * Fix ``get_bam`` and ``get_primary_bam`` functions
+* Fix imports and line breaks for linting
 
 
 ==================

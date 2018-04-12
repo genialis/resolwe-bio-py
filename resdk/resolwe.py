@@ -9,6 +9,7 @@ Resolwe
 
 """
 from __future__ import absolute_import, division, print_function
+from six.moves.urllib.parse import urljoin
 
 import copy
 import logging
@@ -23,7 +24,6 @@ import slumber
 import yaml
 # Needed because we mock requests in test_resolwe.py
 from requests.exceptions import ConnectionError  # pylint: disable=redefined-builtin
-from six.moves.urllib.parse import urljoin  # pylint: disable=import-error
 
 from .exceptions import ValidationError, handle_http_exception
 from .query import ResolweQuery
@@ -344,8 +344,8 @@ class Resolwe(object):
         :return: data object that was just created
         :rtype: Data object
         """
-        if ((descriptor and not descriptor_schema) or
-                (not descriptor and descriptor_schema)):
+        if ((descriptor and not descriptor_schema)
+                or (not descriptor and descriptor_schema)):
             raise ValueError("Set both or neither descriptor and descriptor_schema.")
 
         if src is not None:

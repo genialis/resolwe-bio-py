@@ -138,10 +138,10 @@ class BaseResource(object):
         more comprehensive check is called before save.
 
         """
-        if (hasattr(self, '_original_values') and
-                name in self._original_values and
-                name in self.READ_ONLY_FIELDS and
-                value != self._original_values[name]):
+        if (hasattr(self, '_original_values')
+                and name in self._original_values
+                and name in self.READ_ONLY_FIELDS
+                and value != self._original_values[name]):
             raise ValueError("Can not change read only field {}".format(name))
 
         super(BaseResource, self).__setattr__(name, value)
