@@ -76,14 +76,14 @@ class TestResolweQuery(unittest.TestCase):
         query = MagicMock(spec=ResolweQuery, _cache=None, _limit=None, _offset=None,
                           **{'_clone.return_value': new_query})
         ResolweQuery.__getitem__(query, slice(1, 3))
-        self.assertEqual(new_query._offset, 1)
-        self.assertEqual(new_query._limit, 2)
+        self.assertEqual(new_query._offset, [1])
+        self.assertEqual(new_query._limit, [2])
 
         new_query.__iter__.return_value = [5]
         result = ResolweQuery.__getitem__(query, 1)
         self.assertEqual(result, 5)
-        self.assertEqual(new_query._offset, 1)
-        self.assertEqual(new_query._limit, 1)
+        self.assertEqual(new_query._offset, [1])
+        self.assertEqual(new_query._limit, [1])
 
         new_query.__iter__.return_value = []
         with self.assertRaises(IndexError):
@@ -148,6 +148,7 @@ class TestResolweQuery(unittest.TestCase):
         query = MagicMock(spec=ResolweQuery)
         query._cache = None
         query.api.get = MagicMock(return_value=['object 1', 'object 2'])
+        query._empty_filters = MagicMock(return_value=False)
         query._populate_resource = MagicMock(side_effect=['object 1', 'object 2'])
         query.resource.query_method = 'GET'
 

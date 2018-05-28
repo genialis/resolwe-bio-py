@@ -9,6 +9,10 @@ All notable changes to this project are documented in this file.
 Unreleased
 ==========
 
+Fixed
+-----
+* Make ``<resource>.filter(**kwargs)`` return an empty query instead of all
+  resolwe objects if any of the ``kwargs`` is an empty value
 
 ==================
 4.0.0 - 2018-04-18

@@ -163,12 +163,12 @@ class ResolweQuery(object):
 
             start = 0 if index.start is None else int(index.start)
             stop = 1000000 if index.stop is None else int(index.stop)  # default to something big
-            new_query._offset = start
-            new_query._limit = stop - start
+            new_query._offset = [start]
+            new_query._limit = [stop - start]
             return new_query
 
-        new_query._offset = self._offset + index if self._offset else index
-        new_query._limit = 1
+        new_query._offset = [self._offset + index if self._offset else index]
+        new_query._limit = [1]
 
         query_list = list(new_query)
         if not query_list:
@@ -230,13 +230,21 @@ class ResolweQuery(object):
         """Populate resource with given data."""
         return self.resource(resolwe=self.resolwe, **data)
 
+    def _empty_filters(self, filters):
+        """Check if any filter values are empty."""
+        filterargs = [value for sublist in filters.values() for value in sublist]
+        excl_zero = [value for value in filterargs if value != 0]
+        return not all(excl_zero)
+
     def _fetch(self):
         """Make request to the server and populate cache."""
         if self._cache is not None:
             return  # already fetched
 
         filters = self._compose_filters()
-        if self.resource.query_method == 'GET':
+        if self._empty_filters(self._filters):
+            items = []
+        elif self.resource.query_method == 'GET':
             items = self.api.get(**filters)
         elif self.resource.query_method == 'POST':
             items = self.api.post(filters)
@@ -261,8 +269,8 @@ class ResolweQuery(object):
         # pylint: disable=protected-access
         if self._count is None:
             count_query = self._clone()
-            count_query._offset = 0
-            count_query._limit = 1
+            count_query._offset = [0]
+            count_query._limit = [1]
             count_query._fetch()
             self._count = count_query._count
 
