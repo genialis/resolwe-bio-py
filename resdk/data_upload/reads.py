@@ -12,16 +12,18 @@ __all__ = ('upload_reads',)
 logger = logging.getLogger(__name__)
 
 
-def upload_reads(collection, samplesheet_path):
+def upload_reads(collection, samplesheet_path, basedir=''):
     """Upload NGS reads to the Resolwe server, and annotate.
 
-    The reads files (fastq) and sample sheet (.tsv or .xls*) should be in the
-    same directory.
+    The sample sheet (.tsv or .xls*) location is specifed by `samplesheet_path`.
+    The reads files (.fastq) should be located at `basedir`/'filepath', where
+    'filepath' is specified for each file in the sample sheet.
 
     :param collection: collection to contain the uploaded reads
     :param samplesheet_path: filepath of the sample annotation spreadsheet
+    :param basedir: base directory of the reads files
     """
-    upload_and_annotate(collection, samplesheet_path, _upload_reads_samples)
+    upload_and_annotate(collection, samplesheet_path, basedir, _upload_reads_samples)
 
 
 def _upload_reads_samples(sample_dict, basedir, collection, pre_invalid):

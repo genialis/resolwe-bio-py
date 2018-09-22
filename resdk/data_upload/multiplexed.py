@@ -15,11 +15,11 @@ __all__ = ('upload_demulti',)
 logger = logging.getLogger(__name__)
 
 
-def upload_demulti(collection, samplesheet_path):
+def upload_demulti(collection, samplesheet_path, basedir=''):
     """Upload multiplexed reads to the Resolwe server, demultiplex, and annotate.
 
-    The reads files (.qseq) and sample sheet (.tsv or .xls*) should be in the
-    same directory.
+    The reads files (.qseq) should be located at `basedir`/'filepath', where
+    'filepath' is specified for each file in the sample sheet.
 
     Sample-creation and annotation cannot occur until the demultiplexing process
     has finished. Complete sample annotation by rerunning `upload_demulti` on
@@ -28,8 +28,9 @@ def upload_demulti(collection, samplesheet_path):
 
     :param collection: collection to contain the uploaded reads
     :param samplesheet_path: filepath of the sample annotation spreadsheet
+    :param basedir: base directory of the reads and barcodes files
     """
-    upload_and_annotate(collection, samplesheet_path, _upload_multi_samples)
+    upload_and_annotate(collection, samplesheet_path, basedir, _upload_multi_samples)
 
 
 def _upload_multi_samples(sample_dict, basedir, collection, pre_invalid):
@@ -72,7 +73,7 @@ def _demultiplex_samples(sample_list, basedir, collection, pre_invalid):
     """
     try:
         _validate_multiplexed(collection, sample_list, pre_invalid)
-        mapfile = _generate_mapfile(sample_list, os.path.join(basedir, sample_list[0].path))
+        mapfile = _generate_mapfile(sample_list, sample_list[0].path)
         demulti_result = _start_demultiplex(sample_list, mapfile, basedir, collection)
     except ValueError as ex:
         logger.error(ex)

@@ -283,7 +283,7 @@ class TestUpload(BaseResdkFunctionalTest):
         collection = self.res.collection.create(name='Test upload reads')
         samplesheet = self.get_samplesheet()
         with self.assertLogs() as logs:
-            collection.upload_reads(samplesheet)
+            collection.upload_reads(samplesheet, basedir='files')
 
         # Check the error logging
         self.assertEqual(len(logs.output), 37)
@@ -349,7 +349,7 @@ class TestUpload(BaseResdkFunctionalTest):
 
         # Try to duplicate the upload and fail
         with self.assertLogs() as logs2:
-            collection.upload_reads(samplesheet)
+            collection.upload_reads(samplesheet, basedir='files')
         already_up = [
             "Skipping upload of 'single-reads': File already uploaded.",
             "Skipping upload of 'paired-reads': File already uploaded.",
@@ -392,7 +392,7 @@ class TestUpload(BaseResdkFunctionalTest):
         collection = self.res.collection.create(name='Test upload multiplexed')
         samplesheet = self.get_samplesheet()
         with self.assertLogs() as logs:
-            collection.upload_demulti(samplesheet)
+            collection.upload_demulti(samplesheet, basedir='files')
 
         # Check the error logging
         self.assertEqual(len(logs.output), 39)
@@ -458,7 +458,7 @@ class TestUpload(BaseResdkFunctionalTest):
 
         # Try to duplicate the upload and fail
         with self.assertLogs() as logs2:
-            collection.upload_demulti(samplesheet)
+            collection.upload_demulti(samplesheet, basedir='files')
         already_up = (
             upload_errprefix
             + "Skipping upload of 'pool24.read1.small.qseq.bz2': File already uploaded."

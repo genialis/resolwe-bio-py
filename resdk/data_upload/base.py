@@ -2,7 +2,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import os
 
 from resdk.data_upload.samplesheet import FileImporter
 
@@ -11,18 +10,19 @@ __all__ = ('upload_and_annotate',)
 logger = logging.getLogger(__name__)
 
 
-def upload_and_annotate(collection, samplesheet_path, process):
+def upload_and_annotate(collection, samplesheet_path, basedir, process):
     """Upload data files to the Resolwe server, and annotate.
 
-    The data files and sample sheet (.tsv or .xls*) should be in the
-    same directory.
+    The sample sheet (.tsv or .xls*) location is specifed by `samplesheet_path`.
+    The reads files should be located at `basedir`/'filepath', where 'filepath'
+    is specified for each file in the sample sheet.
 
     :param collection: collection to contain the uploaded reads
     :param samplesheet_path: filepath of the sample annotation spreadsheet
+    :param basedir: base directory of the source files
     :param process: data upload function to use (returns failed sample names)
     """
     # Read and validate the annotation template
-    basedir = os.path.dirname(os.path.abspath(samplesheet_path))
     logger.debug(
         "\nChecking the sample annotation spreadsheet at:\n%s",
         samplesheet_path
