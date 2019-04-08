@@ -16,6 +16,8 @@ class TestDataUsage(BaseResdkFunctionalTest):
         'data_count_normalized',
         'sample_count',
         'sample_count_normalized',
+        'collection_count',
+        'collection_count_normalized',
     }
 
     def test_normal_user(self):
