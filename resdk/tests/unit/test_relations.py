@@ -26,7 +26,7 @@ class TestRelation(unittest.TestCase):
             {'entity': 2, 'position': None},
         ]
         self.assertEqual(relation.samples, [sample_1, sample_2])
-        relation.resolwe.sample.filter.assert_called_with(id__in='1,2')
+        relation.resolwe.sample.filter.assert_called_with(id__in=[1, 2])
 
         # test caching
         self.assertEqual(relation.samples, [sample_1, sample_2])

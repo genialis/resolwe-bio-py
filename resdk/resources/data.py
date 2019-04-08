@@ -140,9 +140,7 @@ class Data(BaseResolweResource):
             payload = self.api(self.id).get()
 
             if payload['collections']:
-                self._collections = self.resolwe.collection.filter(
-                    id__in=','.join(map(str, payload['collections'])),
-                )
+                self._collections = self.resolwe.collection.filter(id__in=payload['collections'])
 
         return self._collections
 

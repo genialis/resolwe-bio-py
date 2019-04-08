@@ -64,7 +64,7 @@ class Relation(BaseResolweResource):
                 self._samples = []
             else:
                 sample_ids = [partition['entity'] for partition in self.partitions]
-                self._samples = self.resolwe.sample.filter(id__in=','.join(map(str, sample_ids)))
+                self._samples = self.resolwe.sample.filter(id__in=sample_ids)
                 # Samples should be sorted, so they have same order as positions
                 # XXX: This may be slow for many samples in single collection
                 self._samples = sorted(

@@ -168,7 +168,7 @@ def rose2(resource, use_background=True, tss=None, stitch=None, beds=None):
                 else:
                     bed_filter = [get_data_id(beds)]
 
-                bed_list = bed_list.filter(id__in=','.join(map(str, bed_filter)))
+                bed_list = bed_list.filter(id__in=bed_filter)
 
             for bed in bed_list:
                 inputs['input'] = bed.id

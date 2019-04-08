@@ -133,9 +133,7 @@ class Sample(SampleUtilsMixin, BaseCollection):
 
         if self._collections is None:
             collection_ids = self._original_values.get('collections', [])
-            self._collections = self.resolwe.collection.filter(
-                id__in=','.join(map(str, collection_ids)),
-            )
+            self._collections = self.resolwe.collection.filter(id__in=collection_ids)
             if not collection_ids:
                 # Make querry empty.
                 self._collections._cache = []  # pylint: disable=protected-access
