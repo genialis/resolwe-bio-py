@@ -29,6 +29,7 @@ class TestCollectionTables(unittest.TestCase):
 
         self.data = MagicMock()
         self.data.id = 12345
+        self.data.process.slug = "process-slug"
         self.data.output.__getitem__.side_effect = {
             "species": "Homo sapiens",
             "source": "ENSEMBL",
@@ -94,6 +95,32 @@ class TestCollectionTables(unittest.TestCase):
         ct = CollectionTables(self.collection, cache_dir="/tmp/cache_dir/")
         self.assertEqual(ct.cache_dir, "/tmp/cache_dir/")
         exists_mock.assert_called_with("/tmp/cache_dir/")
+
+    def test_heterogeneous_collections(self):
+        """Test detecton of heterogeneous collections.
+
+        Check is done in __init__, so it is sufficient to initialize
+        CollectionTables with an appropriate collection.
+        """
+        # Different processes
+        data2 = MagicMock()
+        data2.id = 12345
+        data2.process.slug = "process-slug2"
+        data2.output.__getitem__.side_effect = {"source": "ENSEMBL"}.__getitem__
+        self.collection.data.filter = self.web_request([self.data, data2])
+
+        with self.assertRaisesRegex(ValueError, r'Expressions of all samples.*'):
+            CollectionTables(self.collection)
+
+        # Different source
+        data2 = MagicMock()
+        data2.id = 12345
+        data2.process.slug = "process-slug"
+        data2.output.__getitem__.side_effect = {"source": "GENCODE"}.__getitem__
+        self.collection.data.filter = self.web_request([self.data, data2])
+
+        with self.assertRaisesRegex(ValueError, r'Alignment of all samples.*'):
+            CollectionTables(self.collection)
 
     @patch.object(CollectionTables, "_load_fetch")
     def test_meta(self, load_mock):

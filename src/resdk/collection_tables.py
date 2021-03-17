@@ -45,6 +45,7 @@ DATA_FIELDS = [
     "entity__name",
     "output",
     "process__output_schema",
+    "process__slug",
 ]
 
 CHUNK_SIZE = 1000
@@ -112,6 +113,7 @@ class CollectionTables:
         """
         self.resolwe = collection.resolwe  # type: Resolwe
         self.collection = collection
+        self.check_heterogeneous_collections()
 
         self.tqdm = TqdmWithCallable
         self.progress_callable = progress_callable
@@ -123,6 +125,21 @@ class CollectionTables:
             os.makedirs(self.cache_dir)
 
         self.gene_ids = []  # type: List[str]
+
+    def check_heterogeneous_collections(self):
+        """Ensure consistency among expressions."""
+        message = ""
+
+        process_slugs = {d.process.slug for d in self._data}
+        if len(process_slugs) > 1:
+            message += "Expressions of all samples must be computed with the same process. Expressions of samples in collection {self.collection.name} have been computed with {', '.join(process_slugs)}.\nUse sample_filter in the CollectionTable constructor.\n"
+
+        exp_sources = {d.output["source"] for d in self._data}
+        if len(exp_sources) > 1:
+            message += f"Alignment of all samples must be computed with the same genome source. Alignments of samples in collection {self.collection.name} have been computed with {', '.join(exp_sources)}.\nUse sample_filter in the CollectionTable constructor.\n"
+
+        if message:
+            raise ValueError(message)
 
     @property
     @lru_cache()
