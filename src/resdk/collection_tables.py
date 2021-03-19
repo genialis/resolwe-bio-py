@@ -43,6 +43,7 @@ DATA_FIELDS = [
     "slug",
     "modified",
     "entity__name",
+    "entity__id",
     "output",
     "process__output_schema",
     "process__slug",
@@ -101,6 +102,8 @@ class CollectionTables:
         collection: Collection,
         cache_dir: Optional[str] = None,
         progress_callable: Optional[Callable] = None,
+        expression_source: Optional[str] = None,
+        expression_process_slug: Optional[str] = None,
     ):
         """Initialize class.
 
@@ -110,9 +113,17 @@ class CollectionTables:
         :param progress_callable: custom callable that can be used to report
                                   progress. By default, progress is written to
                                   stderr with tqdm
+        :param expression_source: Only consider samples in the
+                                  collection with specified source
+        :param expression_process_slug: Only consider samples in the
+                                        collection with specified
+                                        process slug
         """
         self.resolwe = collection.resolwe  # type: Resolwe
         self.collection = collection
+        self.expression_source = expression_source
+        self.expression_process_slug = expression_process_slug
+
         self.check_heterogeneous_collections()
 
         self.tqdm = TqdmWithCallable
@@ -132,11 +143,25 @@ class CollectionTables:
 
         process_slugs = {d.process.slug for d in self._data}
         if len(process_slugs) > 1:
-            message += "Expressions of all samples must be computed with the same process. Expressions of samples in collection {self.collection.name} have been computed with {', '.join(process_slugs)}.\nUse sample_filter in the CollectionTable constructor.\n"
+            message += (
+                "Expressions of all samples must be computed with the "
+                "same process. Expressions of samples in collection "
+                f"{self.collection.name} have been computed with "
+                f"{', '.join(process_slugs)}.\n"
+                "Use expression_process_slug filter in the "
+                "CollectionTable constructor.\n"
+            )
 
         exp_sources = {d.output["source"] for d in self._data}
         if len(exp_sources) > 1:
-            message += f"Alignment of all samples must be computed with the same genome source. Alignments of samples in collection {self.collection.name} have been computed with {', '.join(exp_sources)}.\nUse sample_filter in the CollectionTable constructor.\n"
+            message += (
+                "Alignment of all samples must be computed with the "
+                "same genome source. Alignments of samples in "
+                f"collection {self.collection.name} have been computed "
+                f"with {', '.join(exp_sources)}.\n"
+                "Use expression_source filter in the CollectionTable "
+                "constructor.\n"
+            )
 
         if message:
             raise ValueError(message)
@@ -222,21 +247,36 @@ class CollectionTables:
 
         :return: list od Sample objects
         """
-        return list(self.collection.samples.filter(fields=SAMPLE_FIELDS))
+        sample_ids = [d.sample.id for d in self._data]
+        return list(
+            self.collection.samples.filter(id__in=sample_ids, fields=SAMPLE_FIELDS)
+        )
 
     @property
     @lru_cache()
     def _data(self) -> List[Data]:
         """Fetch data objects.
 
-        Fetch expression data objects from given collection and cache the results in
-        memory. Only the needed subset of fields is fetched.
+        Fetch expression data objects from given collection and cache
+        the results in memory. If ``expression_source``  /
+        ``expression_process_slug`` is provided also filter for that.
+        Only the needed subset of fields is fetched.
 
         :return: list of Data objects
         """
-        return list(
-            self.collection.data.filter(type="data:expression:", fields=DATA_FIELDS)
-        )
+        kwargs = {
+            "type": "data:expression:",
+            "fields": DATA_FIELDS,
+        }
+        if self.expression_process_slug:
+            kwargs["process__slug"] = self.expression_process_slug
+
+        data = list(self.collection.data.filter(**kwargs))
+
+        if self.expression_source:
+            data = [d for d in data if d.output["source"] == self.expression_source]
+
+        return data
 
     @property
     @lru_cache()
@@ -258,6 +298,8 @@ class CollectionTables:
             "fields": ["id", "modified"],
             "limit": 1,
         }
+        if self.expression_source or self.expression_process_slug:
+            kwargs["id__in"] = [d.sample.id for d in self._data]
 
         try:
             newest_sample = self.collection.samples.get(**kwargs)
@@ -296,12 +338,11 @@ class CollectionTables:
 
         :return: expression data version
         """
-        data_ids = self.collection.data.filter(type="data:expression:", fields=["id"])
-        if len(data_ids) == 0:
+        if len(self._data) == 0:
             raise ValueError(
                 f"Collection {self.collection.name} has no expression data!"
             )
-        data_ids = tuple(sorted(d.id for d in data_ids))
+        data_ids = tuple(sorted(d.id for d in self._data))
         version = str(hash(data_ids))
         return version
 
@@ -326,7 +367,7 @@ class CollectionTables:
         version = (
             self._metadata_version if data_type == META else self._expression_version
         )
-        cache_file = f"{self.collection.slug}_{data_type}_{version}.pickle"
+        cache_file = f"{self.collection.slug}_{data_type}_{self.expression_source}_{self.expression_process_slug}_{version}.pickle"
         return os.path.join(self.cache_dir, cache_file)
 
     def _get_descriptors(self) -> pd.DataFrame:
@@ -369,7 +410,9 @@ class CollectionTables:
 
         id_to_name = {s.id: s.name for s in self._samples}
 
-        for relation in self.collection.relations:
+        for relation in self.collection.relations.filter(
+            entity=[s.id for s in self._samples]
+        ):
             relations[relation.category] = pd.Series(
                 index=relations.index, dtype="object"
             )
@@ -383,8 +426,9 @@ class CollectionTables:
                 elif partition["position"]:
                     value = partition["position"]
 
-                sample_name = id_to_name[partition["entity"]]
-                relations[relation.category][sample_name] = value
+                sample_name = id_to_name.get(partition["entity"], None)
+                if sample_name:
+                    relations[relation.category][sample_name] = value
 
         return relations
 

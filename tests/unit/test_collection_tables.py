@@ -58,8 +58,7 @@ class TestCollectionTables(unittest.TestCase):
         self.relation.partitions = [
             {"id": 1, "entity": 123, "position": None, "label": "L1"}
         ]
-        self.collection.relations.__iter__ = self.web_request(iter([self.relation]))
-        self.collection.relations.get = self.web_request(self.relation)
+        self.collection.relations.filter = self.web_request([self.relation])
         self.metadata_df = pd.DataFrame(
             [[0], [1], [4]], index=["0", "1", "2"], columns=["PFS"]
         )
@@ -109,7 +108,7 @@ class TestCollectionTables(unittest.TestCase):
         data2.output.__getitem__.side_effect = {"source": "ENSEMBL"}.__getitem__
         self.collection.data.filter = self.web_request([self.data, data2])
 
-        with self.assertRaisesRegex(ValueError, r'Expressions of all samples.*'):
+        with self.assertRaisesRegex(ValueError, r"Expressions of all samples.*"):
             CollectionTables(self.collection)
 
         # Different source
@@ -119,7 +118,7 @@ class TestCollectionTables(unittest.TestCase):
         data2.output.__getitem__.side_effect = {"source": "GENCODE"}.__getitem__
         self.collection.data.filter = self.web_request([self.data, data2])
 
-        with self.assertRaisesRegex(ValueError, r'Alignment of all samples.*'):
+        with self.assertRaisesRegex(ValueError, r"Alignment of all samples.*"):
             CollectionTables(self.collection)
 
     @patch.object(CollectionTables, "_load_fetch")
@@ -261,7 +260,8 @@ class TestCollectionTables(unittest.TestCase):
         data = ct._load_fetch(META)
         self.assertIs(data, self.metadata_df)
         save_mock.assert_called_with(
-            self.metadata_df, "/tmp/resdk/slug_meta_2020-11-01T12:15:00Z.pickle"
+            self.metadata_df,
+            "/tmp/resdk/slug_meta_None_None_2020-11-01T12:15:00Z.pickle",
         )
 
         save_mock.reset_mock()
@@ -269,7 +269,8 @@ class TestCollectionTables(unittest.TestCase):
         self.assertIs(data, self.expressions_df)
         exp_mock.assert_called_with(EXP)
         save_mock.assert_called_with(
-            self.expressions_df, f"/tmp/resdk/slug_exp_{str(hash((12345,)))}.pickle"
+            self.expressions_df,
+            f"/tmp/resdk/slug_exp_None_None_{str(hash((12345,)))}.pickle",
         )
 
         exp_mock.reset_mock()
@@ -278,7 +279,8 @@ class TestCollectionTables(unittest.TestCase):
         self.assertIs(data, self.expressions_df)
         exp_mock.assert_called_with(RC)
         save_mock.assert_called_with(
-            self.expressions_df, f"/tmp/resdk/slug_rc_{str(hash((12345,)))}.pickle"
+            self.expressions_df,
+            f"/tmp/resdk/slug_rc_None_None_{str(hash((12345,)))}.pickle",
         )
 
         exp_mock.reset_mock()
