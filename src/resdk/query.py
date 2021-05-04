@@ -13,7 +13,7 @@ import copy
 import logging
 import operator
 
-from resdk.resources import DescriptorSchema, Process
+from resdk.resources import DescriptorSchema, Process, Relation
 
 
 class ResolweQuery:
@@ -158,7 +158,7 @@ class ResolweQuery:
             # 'sample' is called 'entity' in the backend.
             key = key.replace("sample", "entity")
 
-            if isinstance(value, list):
+            if isinstance(value, list) and self.resource != Relation:
                 value = ",".join(map(str, value))
 
             if self.resource.query_method == "GET":
