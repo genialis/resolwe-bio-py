@@ -24,6 +24,7 @@ throttle(["resolwe_bio_py"]) {
             }
             // Path of the JUnit report.
             def junit_report_file = "${genialis_base_dir}/.reports/resdk_e2e_report.xml"
+            def jenkins_credentials_id = "7430871b-c83b-4822-bcda-8602e5eb1b1d"
 
             try {
                 stage("Checkout") {
@@ -99,7 +100,7 @@ throttle(["resolwe_bio_py"]) {
                         git (
                             [url: "https://github.com/genialis/genialis-base.git",
                             branch: "${genialis_base_e2e_tests_branch}",
-                            credentialsId: "c89baeb1-9818-4627-95fd-50eeb3677a39",
+                            credentialsId: jenkins_credentials_id,
                             changelog: false,
                             poll: false]
                         )
