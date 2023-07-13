@@ -8,15 +8,17 @@ Resolwe
    :members:
 
 """
-import getpass
 import logging
 import ntpath
 import os
 import re
-from urllib.parse import urljoin
+import webbrowser
+from typing import Optional
+from urllib.parse import urljoin, urlparse
 
 import requests
 import slumber
+from bs4 import BeautifulSoup
 
 from resdk.uploader import Uploader
 
@@ -167,8 +169,8 @@ class Resolwe:
                 query = query.filter(**self.query_filter_mapping[query_name])
             setattr(self, query_name, query)
 
-    def _login(self, username=None, password=None):
-        self.auth = ResAuth(username, password, self.url)
+    def _login(self, username=None, password=None, interactive=False):
+        self.auth = ResAuth(username, password, self.url, interactive)
         self.session.cookies = requests.utils.cookiejar_from_dict(self.auth.cookies)
         self.api = ResolweAPI(
             urljoin(self.url, "/api/"),
@@ -185,11 +187,10 @@ class Resolwe:
         Ask the user to enter credentials in command prompt. If
         username / email and password are given, login without prompt.
         """
-        if username is None:
-            username = input("Username (or email): ")
-        if password is None:
-            password = getpass.getpass("Password: ")
-        self._login(username=username, password=password)
+        interactive = False
+        if username is None or password is None:
+            interactive = True
+        self._login(username=username, password=password, interactive=interactive)
 
     def get_query_by_resource(self, resource):
         """Get ResolweQuery for a given resource."""
@@ -467,52 +468,147 @@ class ResAuth(requests.auth.AuthBase):
     :param str username: user's username
     :param str password: user's password
     :param str url: Resolwe server address
+    :param str cookie: user's saml_session cookie
+    :param bool interactive: use browser for authentication
 
     """
 
-    #: Session ID used in HTTP requests
-    sessionid = None
-    #: CSRF token used in HTTP requests
-    csrftoken = None
+    #: Dictionary of authentication cookes.
+    cookies: dict[str, str] = {}
 
-    def __init__(self, username=None, password=None, url=DEFAULT_URL):
+    def __init__(
+        self,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        url: str = DEFAULT_URL,
+        cookie: Optional[str] = None,
+        interactive: bool = False,
+    ):
         """Authenticate user on Resolwe server."""
         self.logger = logging.getLogger(__name__)
-        self.cookies = {}
-
         self.username = username
-        self.url = url
 
-        if not username and not password:
-            return
+        if cookie is not None:
+            # Cookie authentication
+            self.cookies = {"saml_session": cookie}
+            return None
 
-        key = "email" if is_email(username) else "username"
-        payload = {key: username, "password": password}
+        if not username and not password and not interactive:
+            # Anonymous authentication
+            return None
+
+        resolwe_login_url = urljoin(url, "/saml-auth/login/")
+        self.cookies = None
+
+        if not interactive:
+            self.cookies = self.automatic_login(resolwe_login_url, username, password)
+
+        if self.cookies is None:
+            callback_url = urljoin(url, "/saml-auth/print-cookie/")
+            self.cookies = self.interactive_login(resolwe_login_url, callback_url)
+
+    def automatic_login(
+        self, resolwe_login_url: str, username: str, password: str
+    ) -> Optional[dict[str, str]]:
+        """Attempt to perform automatic SAML login.
+
+        Return the cookie dict if successful, None otherwise.
+        """
+        session = requests.Session()
+        error = False
+
+        # Get tenant login page url
+        response = session.get(resolwe_login_url)
+        soup = BeautifulSoup(response.content.decode("utf-8"), "html.parser")
 
         try:
-            response = requests.post(urljoin(url, "/rest-auth/login/"), data=payload)
-        except requests.exceptions.ConnectionError:
-            raise ValueError("Server not accessible on {}. Wrong url?".format(url))
+            saml_request = soup.find("input", {"name": "SAMLRequest"}).get("value")
+            tenant_login_url = soup.find("form").get("action")
+        except AttributeError:
+            error = True
+        if (
+            error
+            or saml_request is None
+            or tenant_login_url is None
+            or response.status_code != 200
+        ):
+            message = "Failed to parse resolwe login page."
+            self.logger.warning(message)
+            return None
 
-        status_code = response.status_code
-        if status_code in [400, 403]:
-            msg = "Response HTTP status code {}. Invalid credentials?".format(
-                status_code
+        # Get SAML request from login page
+        response = session.post(tenant_login_url, data={"SAMLRequest": saml_request})
+        soup = BeautifulSoup(response.content.decode("utf-8"), "html.parser")
+
+        try:
+            state = soup.find("input", {"name": "state"}).get("value")
+        except AttributeError:
+            error = True
+        if error or state is None or response.status_code != 200:
+            message = "Failed to parse tenant login page."
+            self.logger.warning(message)
+            return None
+
+        credentials_receiver_url = (
+            urlparse(tenant_login_url)
+            ._replace(path="/u/login", query=f"state={state}")
+            .geturl()
+        )
+
+        # Post data to tenant credentials receiver
+        response = session.post(
+            credentials_receiver_url, data={"username": username, "password": password}
+        )
+        soup = BeautifulSoup(response.content.decode("utf-8"), "html.parser")
+
+        try:
+            saml_response = soup.find("input", {"name": "SAMLResponse"}).get("value")
+            assertion_consumer_url = soup.find("form").get("action")
+        except AttributeError:
+            error = True
+        if (
+            error
+            or saml_response is None
+            or assertion_consumer_url is None
+            or response.status_code != 200
+        ):
+            message = (
+                "Failed to post login credentials. Wrong password or MFA required?"
             )
-            raise ValueError(msg)
+            self.logger.warning(message)
+            return None
 
-        if not ("sessionid" in response.cookies and "csrftoken" in response.cookies):
-            raise Exception("Missing sessionid or csrftoken. Invalid credentials?")
+        # Forward SAML response to assertion consumer service
+        response = session.post(
+            assertion_consumer_url,
+            data={"SAMLResponse": saml_response},
+            allow_redirects=False,
+        )
+        cookies = session.cookies.get_dict()
 
-        self.sessionid = response.cookies["sessionid"]
-        self.csrftoken = response.cookies["csrftoken"]
-        self.url = url
-        self.cookies = {"csrftoken": self.csrftoken, "sessionid": self.sessionid}
+        if "saml_session" not in cookies or response.status_code != 302:
+            message = "SAML assertion rejected by Resolwe."
+            self.logger.warning(message)
+            return None
+
+        return cookies
+
+    def interactive_login(self, login_url: str, callback_url: str) -> dict[str, str]:
+        """Prompt user to log in with a web browser. Return the cookie dict."""
+
+        url = urlparse(login_url)._replace(query=f"next={callback_url}").geturl()
+
+        # Do not use logger here, because we want the url to be visible even if logging is disabled.
+        print(f"Please log in with a web browser: {url}")
+        webbrowser.open(url)
+        cookie = input("Paste the cookie here: ")
+
+        return {"saml_session": cookie}
 
     def __call__(self, request):
         """Set request headers."""
-        if self.sessionid and self.csrftoken:
-            request.headers["X-CSRFToken"] = self.csrftoken
+        if "csrftoken" in self.cookies:
+            request.headers["X-CSRFToken"] = self.cookies["csrftoken"]
 
         request.headers["referer"] = self.url
 

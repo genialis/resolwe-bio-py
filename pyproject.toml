@@ -41,6 +41,7 @@ classifiers = [
 ]
 dependencies = [
     "aiohttp",
+    "beautifulsoup4~=4.12",
     "requests>=2.6.0",
     "slumber>=0.7.1",
     "wrapt",

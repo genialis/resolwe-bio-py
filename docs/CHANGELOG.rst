@@ -9,6 +9,11 @@ All notable changes to this project are documented in this file.
 Unreleased
 ==========
 
+Changed
+-------
+- Change login to use the new SAML authentication method
+- User can now authenticate by providing a valid session cookie instead of credentials
+
 Fixed
 -----
 - Fix ``RNATables`` in case of very large collection
