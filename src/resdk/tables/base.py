@@ -336,7 +336,7 @@ class BaseTables(abc.ABC):
         # Make one query for all values instead of one per sample
         avs = self.resolwe.annotation_value.filter(
             entity__collection=self.collection.id
-        )
+        ).iterate()
 
         sample_data = defaultdict(dict)
         sample_dtypes = defaultdict(dict)
