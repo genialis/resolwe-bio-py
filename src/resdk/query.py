@@ -162,24 +162,35 @@ class ResolweQuery:
 
     def _dehydrate_resources(self, obj):
         """Iterate through object and replace all objects with their ids."""
+        print("Dehydrating", obj, type(obj))
         if isinstance(obj, BaseResource):
+            print("Base")
             return obj.id
         if isinstance(obj, dict):
+            print("Dict")
             return {key: self._dehydrate_resources(value) for key, value in obj.items()}
         if self._non_string_iterable(obj):
+            print("Non string iterable")
             return [self._dehydrate_resources(element) for element in obj]
-
+        print("Returning unchanged", obj, type(obj))
         return obj
 
     def _add_filter(self, filter_):
         """Add filtering parameters."""
+        print("Filter for ", self.resource)
         for key, value in filter_.items():
             # 'sample' is called 'entity' in the backend.
-            key = key.replace("sample", "entity")
+            if not self.resource.__name__.startswith("Variant"):
+                print("Replacing sample with entity in", key)
+                key = key.replace("sample", "entity")
+            print("Adding filter", key, value)
             value = self._dehydrate_resources(value)
+            print("Dehidrated value", value, type(value))
             if self._non_string_iterable(value):
+                print("Iterable")
                 value = ",".join(map(str, value))
             if self.resource.query_method == "GET":
+                print("Appending value", value)
                 self._filters[key].append(value)
             elif self.resource.query_method == "POST":
                 self._filters[key] = value
@@ -211,6 +222,8 @@ class ResolweQuery:
 
         filters = self._compose_filters()
         if self.resource.query_method == "GET":
+            print("Query with filters", filters)
+            print("My api", self.api)
             items = self.api.get(**filters)
         elif self.resource.query_method == "POST":
             items = self.api.post(filters)
@@ -285,6 +298,8 @@ class ResolweQuery:
             kwargs["limit"] = kwargs.get("limit", 1)
 
         new_query = self._clone()
+
+        print("Adding filters", kwargs)
         new_query._add_filter(kwargs)
 
         response = list(new_query)
@@ -398,6 +413,30 @@ class AnnotationFieldQuery(ResolweQuery):
         """
         group_name, field_name = full_path.split(".", maxsplit=1)
         return self.get(name=field_name, group__name=group_name)
+
+
+class VariantCallQuery(ResolweQuery):
+    """Do not translate 'sample' to 'entity'."""
+
+    def _add_filter(self, filter_):
+        """Add filtering parameters."""
+        for key, value in filter_.items():
+            # 'sample' is called 'entity' in the backend.
+            print("Adding filter", key, value)
+            value = self._dehydrate_resources(value)
+            print("Dehidrated value", value, type(value))
+            if self._non_string_iterable(value):
+                print("Iterable")
+                value = ",".join(map(str, value))
+            if self.resource.query_method == "GET":
+                print("Appending value", value)
+                self._filters[key].append(value)
+            elif self.resource.query_method == "POST":
+                self._filters[key] = value
+            else:
+                raise NotImplementedError(
+                    "Unsupported query_method: {}".format(self.resource.query_method)
+                )
 
 
 class AnnotationValueQuery(ResolweQuery):

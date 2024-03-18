@@ -16,6 +16,7 @@ Changed
 Added
 -----
 - Add ``restart`` method to the ``Data`` resource
+- Add variants related models
 
 Fixed
 -----

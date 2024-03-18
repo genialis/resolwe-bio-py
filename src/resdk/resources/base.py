@@ -55,9 +55,12 @@ class BaseResource:
         if (id is None and slug is None) or (id and slug):
             raise ValueError("One and only one of id or slug must be given")
 
+        print("Getting fetch object query")
         query = resolwe.get_query_by_resource(cls)
+        # print("Got query", query)
         if id:
             return query.get(id=id)
+        print("Getting from query with slug", slug)
         return query.get(slug=slug)
 
     def fields(self):
@@ -76,6 +79,10 @@ class BaseResource:
         """Update resource fields from the server."""
         response = self.api(self.id).get()
         self._update_fields(response)
+
+    def __hash__(self):
+        """Return hash of the object."""
+        return hash(self.id)
 
     def _dehydrate_resources(self, obj):
         """Iterate through object and replace all objects with their ids."""
@@ -130,6 +137,8 @@ class BaseResource:
             payload = {}
             for field_name in self.WRITABLE_FIELDS:
                 if field_changed(field_name):
+                    print("Field changed", field_name)
+                    print("Change", getattr(self, field_name))
                     payload[field_name] = self._dehydrate_resources(
                         getattr(self, field_name)
                     )
@@ -137,6 +146,7 @@ class BaseResource:
                 payload["entity"] = payload.pop("sample")
 
             if payload:
+                print("Sending payload 1", payload)
                 response = self.api(self.id).patch(payload)
                 self._update_fields(response)
 
@@ -216,14 +226,23 @@ class BaseResource:
 
     def _resource_setter(self, payload, resource, field):
         """Set ``resource`` with ``payload`` on ``field``."""
+        print("-" * 40)
+        print("Resource setter", payload, type(payload))
+        print("Resource", resource)
         if isinstance(payload, resource):
+            print("resource")
             setattr(self, field, payload)
         elif isinstance(payload, dict):
+            print("Dict")
             setattr(self, field, resource(resolwe=self.resolwe, **payload))
         elif isinstance(payload, int):
+            print("Int")
             setattr(self, field, resource.fetch_object(self.resolwe, id=payload))
         elif isinstance(payload, str):
-            setattr(self, field, resource.fetch_object(self.resolwe, slug=payload))
+            print("Str")
+            res = resource.fetch_object(self.resolwe, slug=payload)
+            print("Got result for Str", res)
+            setattr(self, field, res)
         else:
             setattr(self, field, payload)
 

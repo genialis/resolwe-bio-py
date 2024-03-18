@@ -47,6 +47,10 @@ from .resources import (
     Relation,
     Sample,
     User,
+    Variant,
+    VariantAnnotation,
+    VariantCall,
+    VariantExperiment,
 )
 from .resources.base import BaseResource
 from .resources.kb import Feature, Mapping
@@ -114,6 +118,10 @@ class Resolwe:
     resource_query_mapping = {
         AnnotationField: "annotation_field",
         AnnotationValue: "annotation_value",
+        Variant: "variant",
+        VariantAnnotation: "variant_annotation",
+        VariantExperiment: "variant_experiment",
+        VariantCall: "variant_calls",
         Data: "data",
         Collection: "collection",
         Sample: "sample",
@@ -126,6 +134,7 @@ class Resolwe:
         Mapping: "mapping",
         Geneset: "geneset",
         Metadata: "metadata",
+        Variant: "variant",
     }
     # Map ResolweQuery name to it's slug_field
     slug_field_mapping = {
