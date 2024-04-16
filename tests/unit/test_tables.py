@@ -35,9 +35,9 @@ class TestTables(unittest.TestCase):
             type="DECIMAL",
         )
         self.av1._field = self.af1
-        self.resolwe.annotation_value.filter.return_value = [
-            self.av1,
-        ]
+        self.resolwe.annotation_value.filter.return_value = MagicMock(
+            iterate=MagicMock(return_value=[self.av1])
+        )
 
         self.data = MagicMock()
         self.data.id = 12345

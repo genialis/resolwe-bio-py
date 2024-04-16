@@ -423,3 +423,15 @@ class AnnotationValueQuery(ResolweQuery):
                 for value in missing[field.id]:
                     value._field = field
                     value._original_values["field"] = field._original_values
+
+    def iterate(self, chunk_size=10000, show_progress=False):
+        """
+        Iterate through query.
+
+        This can come handy when one wishes to iterate through hundreds or
+        thousands of objects and would otherwise get "504 Gateway-timeout".
+
+        The method cannot be used together with the following filters:
+        limit, offset and ordering, and will raise a ``ValueError``.
+        """
+        return super().iterate(chunk_size=chunk_size, show_progress=show_progress)

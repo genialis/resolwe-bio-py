@@ -13,6 +13,10 @@ Added
 -----
 - Add ``restart`` method to the ``Data`` resource
 
+Changed
+-------
+- Default chunk size for ``iterate`` on ``AnnotationValue`` is set to 10.000
+
 
 Fixed
 -----
