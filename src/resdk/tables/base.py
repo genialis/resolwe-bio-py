@@ -250,6 +250,9 @@ class BaseTables(abc.ABC):
         version = (
             newest_modified.astimezone(pytz.utc).isoformat().replace("+00:00", "Z")
         )
+        # On Windows, datetime stamps are not appropriate as a part of file name.
+        # The reason is the colon char (":")
+        version = str(hash(version))
         return version
 
     @property
