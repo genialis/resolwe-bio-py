@@ -2,6 +2,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 from unittest.mock import patch
 
 from resdk import Resolwe
@@ -44,6 +45,7 @@ class BaseResdkDocsFunctionalTest(BaseResdkFunctionalTest):
 
         if hasattr(self, "collection"):
             self.collection.delete(force=True)
+            time.sleep(10)
 
     def run_tutorial_script(self, script_name, replace_lines=None):
         """Run a script from tutorial folder.
@@ -71,13 +73,42 @@ class BaseResdkDocsFunctionalTest(BaseResdkFunctionalTest):
             exec("".join(content))
 
     def upload_reads(self, res):
+        print("Uploading reads")
+        print("Using res", res)
         reads = res.run(
             slug="upload-fastq-single",
             input={"src": os.path.join(TEST_FILES_DIR, "reads.fastq.gz")},
             collection=self.collection.id,
         )
-        self.set_slug(reads, self.reads_slug)
+
+        print("Uploaded reads")
+        print(reads)
+        print("All data")
+        print(res.data.all())
+        print("All samples")
+        print(res.sample.all())
+
         self.set_slug(reads.sample, self.sample_slug)
+        self.set_slug(reads, self.reads_slug)
+
+        print("After set slug")
+        print(reads)
+        print("All data")
+        print(res.data.all())
+        print("All samples")
+        print(res.sample.all())
+
+        reads.sample.slug = self.sample_slug
+        reads.sample.save()
+        reads.slug = self.reads_slug
+        reads.save()
+        print("After set slug manual")
+        reads.update()
+        print(reads)
+        print("All data")
+        print(res.data.all())
+        print("All samples")
+        print(res.sample.all())
 
         return reads
 
@@ -96,6 +127,12 @@ class BaseResdkDocsFunctionalTest(BaseResdkFunctionalTest):
         return genome
 
     def upload_annotation(self, res):
+        print("Annotations")
+        print("All data")
+        print(res.data.all())
+        print("All samples")
+        print(res.sample.all())
+
         annotation = res.run(
             slug="upload-gtf",
             input={
@@ -106,7 +143,20 @@ class BaseResdkDocsFunctionalTest(BaseResdkFunctionalTest):
             },
             collection=self.collection.id,
         )
+
+        print("Annotations after create")
+        print("All data")
+        print(res.data.all())
+        print("All samples")
+        print(res.sample.all())
+
         self.set_slug(annotation, self.annotation_slug)
+
+        print("Annotations after set slug")
+        print("All data")
+        print(res.data.all())
+        print("All samples")
+        print(res.sample.all())
 
         return annotation
 

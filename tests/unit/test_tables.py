@@ -252,7 +252,7 @@ class TestTables(unittest.TestCase):
 
         ct = RNATables(self.collection)
         version = ct._metadata_version
-        self.assertEqual(version, "2020-11-01T12:15:00Z")
+        self.assertEqual(version, str(hash("2020-11-01T12:15:00Z")))
 
         # use cache
         t = time()
@@ -315,7 +315,7 @@ class TestTables(unittest.TestCase):
         self.assertIs(data, self.metadata_df)
         save_mock.assert_called_with(
             self.metadata_df,
-            "/tmp/resdk/slug_meta_None_None_2020-11-01T12:15:00Z.pickle",
+            f"/tmp/resdk/slug_meta_None_None_{str(hash('2020-11-01T12:15:00Z'))}.pickle",
         )
 
         save_mock.reset_mock()
