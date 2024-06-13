@@ -20,6 +20,9 @@ genome_index = res.data.get('resdk-example-genome-index')
 # All paired-end fastq objects
 res.data.filter(type='data:reads:fastq:paired')
 
+print("All data objects")
+print(res.data.all())
+
 # Get specific object by slug
 reads = res.data.get('resdk-example-reads')
 
