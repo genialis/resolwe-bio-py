@@ -47,6 +47,9 @@ from .resources import (
     Relation,
     Sample,
     User,
+    Variant,
+    VariantCall,
+    VariantExperiment,
 )
 from .resources.base import BaseResource
 from .resources.kb import Feature, Mapping
@@ -114,6 +117,9 @@ class Resolwe:
     resource_query_mapping = {
         AnnotationField: "annotation_field",
         AnnotationValue: "annotation_value",
+        Variant: "variant",
+        VariantExperiment: "variant_experiment",
+        VariantCall: "variant_calls",
         Data: "data",
         Collection: "collection",
         Sample: "sample",
