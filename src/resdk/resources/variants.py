@@ -1,5 +1,7 @@
 """Variant resources."""
 
+from typing import Any
+
 from .base import BaseResource
 
 
@@ -21,13 +23,21 @@ class Variant(BaseResource):
         """Initialize object."""
         super().__init__(resolwe, **model_data)
         self._annotations = None
+        self._samples = None
 
     @property
     def annotations(self):
         """Get the annotations for this variant."""
         if self._annotations is None:
-            self._annotations = self.resolwe.variant_annotation.filter(id=self.id)
+            self._annotations = self.resolwe.variant_annotation.filter(variant=self.id)
         return self._annotations
+
+    @property
+    def samples(self):
+        """Get samples."""
+        if self._samples is None:
+            self._samples = self.resolwe.sample.filter(variant_calls__variant=self.id)
+        return self._samples
 
     def __repr__(self) -> str:
         """Return string representation."""
@@ -76,7 +86,7 @@ class VariantCall(BaseResource):
     endpoint = "variant_calls"
 
     READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS + (
-        "sample",
+        "sample_id",
         "variant",
         "experiment",
         "quality",
@@ -86,8 +96,28 @@ class VariantCall(BaseResource):
         "genotype",
         "genotype_quality",
         "filter",
-        "data",
+        "data_id",
     )
+
+    def __init__(self, resolwe, **model_data: Any):
+        """Initialize object."""
+        super().__init__(resolwe, **model_data)
+        self._data = None
+        self._sample = None
+
+    @property
+    def data(self):
+        """Get the data object for this variant call."""
+        if self._data is None:
+            self._data = self.resolwe.data.get(self.data_id)
+        return self._data
+
+    @property
+    def sample(self):
+        """Get the sample object for this variant call."""
+        if self._sample is None:
+            self._sample = self.resolwe.sample.get(self.sample_id)
+        return self._sample
 
     def __repr__(self) -> str:
         """Return string representation."""
