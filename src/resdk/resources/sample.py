@@ -70,6 +70,12 @@ class Sample(SampleUtilsMixin, BaseCollection):
             self._variants = self.resolwe.variant.filter(variant_calls__sample=self.id)
         return self._variants
 
+    def variants_by_experiment(self, experiment):
+        """Get variants for sample detected by the given experiment."""
+        return self.resolwe.variant.filter(
+            variant_calls__sample=self.id, variant_calls__experiment=experiment.id
+        )
+
     @property
     def collection(self):
         """Get collection."""
