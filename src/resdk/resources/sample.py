@@ -1,7 +1,7 @@
 """Sample resource."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from resdk.exceptions import ResolweServerError
 from resdk.shortcuts.sample import SampleUtilsMixin
@@ -9,6 +9,7 @@ from resdk.shortcuts.sample import SampleUtilsMixin
 from ..utils.decorators import assert_object_exists
 from .background_task import BackgroundTask
 from .collection import BaseCollection, Collection
+from .variants import Variant
 
 if TYPE_CHECKING:
     from .annotations import AnnotationValue
@@ -39,6 +40,8 @@ class Sample(SampleUtilsMixin, BaseCollection):
         self._background = None
         #: is this sample background to any other sample?
         self._is_background = None
+        #: list of ``Variant`` objects attached to the sample
+        self._variants = None
 
         super().__init__(resolwe, **model_data)
 
@@ -59,6 +62,13 @@ class Sample(SampleUtilsMixin, BaseCollection):
             self._data = self.resolwe.data.filter(entity=self.id)
 
         return self._data
+
+    @property
+    def variants(self):
+        """Get variants."""
+        if self._variants is None:
+            self._variants = self.resolwe.variant.filter(variant_calls__sample=self.id)
+        return self._variants
 
     @property
     def collection(self):

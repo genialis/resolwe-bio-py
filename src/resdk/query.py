@@ -175,7 +175,9 @@ class ResolweQuery:
         """Add filtering parameters."""
         for key, value in filter_.items():
             # 'sample' is called 'entity' in the backend.
-            key = key.replace("sample", "entity")
+            if not key.startswith("variant_calls__"):
+                key = key.replace("sample", "entity")
+            print("Adding filter", key, value)
             value = self._dehydrate_resources(value)
             if self._non_string_iterable(value):
                 value = ",".join(map(str, value))
