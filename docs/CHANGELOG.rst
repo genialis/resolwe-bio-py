@@ -4,6 +4,15 @@ Change Log
 
 All notable changes to this project are documented in this file.
 
+===================
+21.3.0 - 2024-09-30
+===================
+
+Added
+-----
+- Add an argument for custom file naming of downloaded files
+  and propagate this change in ``Data`` resource
+
 
 ===================
 21.2.1 - 2024-10-08

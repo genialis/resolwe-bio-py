@@ -451,13 +451,15 @@ class TestDownload(unittest.TestCase):
 
         message = "Download directory does not exist: .*"
         with self.assertRaisesRegex(ValueError, message):
-            Resolwe._download_files(resolwe_mock, self.file_list, "/does/not/exist/")
+            Resolwe._download_files(
+                resolwe_mock, files=self.file_list, download_dir="/does/not/exist/"
+            )
 
     @patch("resdk.resolwe.Resolwe", spec=True)
     def test_empty_file_list(self, resolwe_mock):
         resolwe_mock.configure_mock(**self.config)
 
-        Resolwe._download_files(resolwe_mock, [], download_dir=self.tmp_dir)
+        Resolwe._download_files(resolwe_mock, files=[], download_dir=self.tmp_dir)
 
         resolwe_mock.logger.info.assert_called_once_with("No files to download.")
 
@@ -474,7 +476,7 @@ class TestDownload(unittest.TestCase):
         with self.assertRaisesRegex(Exception, "abc"):
             Resolwe._download_files(
                 resolwe_mock,
-                self.file_list[:1],
+                files=self.file_list[:1],
                 download_dir=self.tmp_dir,
             )
         self.assertEqual(resolwe_mock.logger.info.call_count, 2)
@@ -508,7 +510,7 @@ class TestDownload(unittest.TestCase):
 
         Resolwe._download_files(
             resolwe_mock,
-            self.file_list,
+            files=self.file_list,
             download_dir=self.tmp_dir,
             show_progress=False,
         )

@@ -45,14 +45,18 @@ class TestBaseCollectionDownload(unittest.TestCase):
         collection_mock.configure_mock(data=[DATA0, DATA2], resolwe=MagicMock())
         BaseCollection.download(collection_mock, field_name="output.exp")
         flist = ["2/outfile.exp"]
-        collection_mock.resolwe._download_files.assert_called_once_with(flist, None)
+        collection_mock.resolwe._download_files.assert_called_once_with(
+            files=flist, download_dir=None
+        )
 
         # Check if ``output_field`` does not start with 'output'
         collection_mock.reset_mock()
         collection_mock.configure_mock(data=[DATA1, DATA0], resolwe=MagicMock())
         BaseCollection.download(collection_mock, field_name="fastq")
         flist = ["1/reads.fq", "1/arch.gz"]
-        collection_mock.resolwe._download_files.assert_called_once_with(flist, None)
+        collection_mock.resolwe._download_files.assert_called_once_with(
+            files=flist, download_dir=None
+        )
 
     def test_bad_field_name(self):
         collection = Collection(resolwe=MagicMock(), id=1)

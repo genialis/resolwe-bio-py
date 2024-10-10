@@ -324,7 +324,9 @@ class Data(BaseResolweResource):
 
         return file_list
 
-    def download(self, file_name=None, field_name=None, download_dir=None):
+    def download(
+        self, file_name=None, field_name=None, download_dir=None, custom_file_name=None
+    ):
         """Download Data object's files and directories.
 
         Download files and directories from the Resolwe server to the
@@ -336,6 +338,8 @@ class Data(BaseResolweResource):
         :type field_name: string
         :param download_dir: download path
         :type download_dir: string
+        :param custom_file_name: custom file name
+        :type custom_file_name: string
         :rtype: None
 
         Data objects can contain multiple files and directories. All are
@@ -353,7 +357,21 @@ class Data(BaseResolweResource):
             "{}/{}".format(self.id, fname)
             for fname in self.files(file_name, field_name)
         ]
-        self.resolwe._download_files(files, download_dir)
+
+        # Only applies if downloading a single file
+        custom_file_names = None
+        if custom_file_name:
+            if file_name or field_name:
+                custom_file_names = [custom_file_name] * len(files)
+            else:
+                raise ValueError(
+                    "Setting a custom file name is not supported "
+                    "without specifying file name or field name."
+                )
+
+        self.resolwe._download_files(
+            files=files, download_dir=download_dir, custom_file_names=custom_file_names
+        )
 
     def stdout(self):
         """Return process standard output (stdout.txt file content).

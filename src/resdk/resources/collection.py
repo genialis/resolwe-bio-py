@@ -140,7 +140,7 @@ class BaseCollection(BaseResolweResource):
             data_files = data.files(file_name, field_name)
             files.extend("{}/{}".format(data.id, file_name) for file_name in data_files)
 
-        self.resolwe._download_files(files, download_dir)
+        self.resolwe._download_files(files=files, download_dir=download_dir)
 
 
 class Collection(CollectionRelationsMixin, BaseCollection):
