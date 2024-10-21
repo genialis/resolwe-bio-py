@@ -54,6 +54,10 @@ Resource classes
    :members:
    :inherited-members:
 
+.. autoclass:: resdk.resources.Variants
+   :members:
+   :inherited-members:
+
 .. autoclass:: resdk.resources.User
    :members:
    :inherited-members:
@@ -102,6 +106,7 @@ from .process import Process
 from .relation import Relation
 from .sample import Sample
 from .user import Group, User
+from .variants import Variant, VariantAnnotation, VariantCall, VariantExperiment
 
 __all__ = (
     "AnnotationField",
@@ -117,4 +122,8 @@ __all__ = (
     "Process",
     "Relation",
     "User",
+    "Variant",
+    "VariantAnnotation",
+    "VariantCall",
+    "VariantExperiment",
 )
