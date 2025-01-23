@@ -21,6 +21,10 @@ Changed
 -------
 - Drop support for ``Python 3.8``
 
+Changed
+-------
+- Change ``_resource_setter`` to work with list of resources
+
 
 ===================
 21.2.1 - 2024-10-08
