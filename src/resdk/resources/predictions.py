@@ -62,17 +62,18 @@ class PredictionField(BaseResource):
 
     endpoint = "prediction_field"
 
-    READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS + (
-        "description",
+    UPDATE_PROTECTED_FIELDS = (
         "group",
-        "label",
         "name",
-        "sort_order",
         "type",
-        "validator_regex",
-        "vocabulary",
-        "required",
         "version",
+    )
+    WRITABLE_FIELDS = (
+        "description",
+        "inputs",
+        "label",
+        "required",
+        "sort_order",
     )
 
     def __init__(self, resolwe: "Resolwe", **model_data):
@@ -84,7 +85,30 @@ class PredictionField(BaseResource):
         self.logger = logging.getLogger(__name__)
         #: prediction group
         self._group = None
+        #: prediction inputs
+        self._inputs = None
+        #: prediction type
         super().__init__(resolwe, **model_data)
+
+    @property
+    def inputs(self):
+        """Get inputs."""
+        return self._inputs
+
+    @property
+    def type(self):
+        """Get prediction type."""
+        return self._type
+
+    @type.setter
+    def type(self, value):
+        """Set prediction type."""
+        self._type = PredictionType(value)
+
+    @inputs.setter
+    def inputs(self, payload):
+        """Store inputs."""
+        self._resource_setter(payload, PredictionField, "_inputs")
 
     @property
     def group(self) -> PredictionGroup:
@@ -97,10 +121,7 @@ class PredictionField(BaseResource):
     @group.setter
     def group(self, payload: dict):
         """Set prediction group."""
-        if self._group is None:
-            self._resource_setter(payload, PredictionGroup, "_group")
-        else:
-            raise AttributeError("PredictionGroup is read-only.")
+        self._resource_setter(payload, PredictionGroup, "_group")
 
     def __repr__(self):
         """Return user friendly string representation."""

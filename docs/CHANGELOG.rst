@@ -28,6 +28,8 @@ Fixed
 - Fix multi-file download stopped after downolading html file
 - Modify ``clear_cache`` method of ``BaseTables`` to clear only the
   cache of the specified collection
+- Add ``inputs`` field to ``PredictionField`` resource
+- Allow updating ``PredictionField`` resource
 
 Changed
 -------
