@@ -29,6 +29,10 @@ Fixed
 - Modify ``clear_cache`` method of ``BaseTables`` to clear only the
   cache of the specified collection
 
+Changed
+-------
+- Change ``_resource_setter`` to work with list of resources
+
 
 ===================
 21.2.1 - 2024-10-08
