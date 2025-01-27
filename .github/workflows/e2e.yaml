@@ -94,10 +94,10 @@ jobs:
           echo "List backups"
           velero backup get
           echo "Restore"
-          velero restore create --include-namespaces default --from-backup edge --wait
+          velero restore create --include-namespaces default --from-backup 63.2.0 --wait
           echo "Get restore"
           velero restore get
-          RESTORE_NAME=$(velero restore get | grep edge | awk '{print $1}')
+          RESTORE_NAME=$(velero restore get | grep 63.2.0 | awk '{print $1}')
           echo "Describe restore"
           velero restore describe $RESTORE_NAME
           echo "Logs restore"
