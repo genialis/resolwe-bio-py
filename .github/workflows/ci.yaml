@@ -11,7 +11,7 @@ on:
 
 jobs:
   unittest:
-    runs-on: arc-runner
+    runs-on: public-docker-runner
     env:
       TOX_COMMAND: "tox --skip-missing-interpreters false"
 
@@ -46,7 +46,7 @@ jobs:
     uses: ./.github/workflows/e2e.yaml
 
   build:
-    runs-on: arc-runner
+    runs-on: public-docker-runner
     needs: [unittest, e2e]
     if: startsWith(github.ref, 'refs/tags')
     env:
