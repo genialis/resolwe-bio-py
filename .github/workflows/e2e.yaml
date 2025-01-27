@@ -14,7 +14,7 @@ env:
 
 jobs:
   e2e:
-    runs-on: public-kube-runner
+    runs-on: private-kube-runner
 
     steps:
       - name: Checkout resolwe-bio-py
