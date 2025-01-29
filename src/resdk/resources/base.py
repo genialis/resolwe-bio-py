@@ -214,18 +214,23 @@ class BaseResource:
         else:
             return False
 
+    def _get_resourse(self, payload, resource):
+        """Get ``resource`` from ``payload``."""
+        if isinstance(payload, resource):
+            return payload
+        elif isinstance(payload, dict):
+            return resource(resolwe=self.resolwe, **payload)
+        elif isinstance(payload, int):
+            return resource.fetch_object(self.resolwe, id=payload)
+        elif isinstance(payload, str):
+            return resource.fetch_object(self.resolwe, slug=payload)
+        elif isinstance(payload, list):
+            return [self._get_resourse(item, resource) for item in payload]
+        return payload
+
     def _resource_setter(self, payload, resource, field):
         """Set ``resource`` with ``payload`` on ``field``."""
-        if isinstance(payload, resource):
-            setattr(self, field, payload)
-        elif isinstance(payload, dict):
-            setattr(self, field, resource(resolwe=self.resolwe, **payload))
-        elif isinstance(payload, int):
-            setattr(self, field, resource.fetch_object(self.resolwe, id=payload))
-        elif isinstance(payload, str):
-            setattr(self, field, resource.fetch_object(self.resolwe, slug=payload))
-        else:
-            setattr(self, field, payload)
+        setattr(self, field, self._get_resourse(payload, resource))
 
 
 class BaseResolweResource(BaseResource):

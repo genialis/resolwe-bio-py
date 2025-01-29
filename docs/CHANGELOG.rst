@@ -20,6 +20,12 @@ Added
 Changed
 -------
 - Drop support for ``Python 3.8``
+- Add ``inputs`` field to ``PredictionField`` resource
+- Allow updating ``PredictionField`` resource
+
+Changed
+-------
+- Change ``_resource_setter`` to work with list of resources
 
 
 ===================
