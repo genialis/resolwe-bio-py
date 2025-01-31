@@ -330,6 +330,7 @@ class Data(BaseResolweResource):
         file_name: Optional[str] = None,
         field_name: Optional[str] = None,
         download_dir: Optional[str] = None,
+        show_progress: bool = True,
     ):
         """Download Data object's files and directories.
 
@@ -350,7 +351,9 @@ class Data(BaseResolweResource):
         file_names = self.files(file_name, field_name)
         files = ["{}/{}".format(self.id, fname) for fname in file_names]
 
-        self.resolwe._download_files(files=files, download_dir=download_dir)
+        self.resolwe._download_files(
+            files=files, download_dir=download_dir, show_progress=show_progress
+        )
 
         return file_names
 
