@@ -59,7 +59,6 @@ class BaseTables(abc.ABC):
 
     process_type = None
     META = "meta"
-    QC = "qc"
 
     SAMPLE_FIELDS = [
         "id",
@@ -112,15 +111,6 @@ class BaseTables(abc.ABC):
         :return: table of metadata
         """
         return self._load_fetch(self.META)
-
-    @property
-    @lru_cache()
-    def qc(self) -> pd.DataFrame:
-        """Return samples QC table as a pandas DataFrame object.
-
-        :return: table of QC values
-        """
-        return self._load_fetch(self.QC)
 
     @staticmethod
     def clear_cache() -> None:
@@ -257,32 +247,6 @@ class BaseTables(abc.ABC):
 
     @property
     @lru_cache()
-    def _qc_version(self) -> str:
-        """Return server QC data version.
-
-        The versioning of QC Data on the server is determined by the hash of
-        the tuple of sorted QC data objects ids.
-
-        :return: data version
-        """
-        mqc_ids = [
-            item.id
-            for item in self.collection.data.filter(
-                type="data:multiqc",
-                status="OK",
-                entity__isnull=False,
-                fields=["id", "entity__id"],
-            ).iterate()
-        ]
-        if not mqc_ids:
-            raise ValueError(
-                f"Collection {self.collection.name} has no samples with MultiQC data!"
-            )
-
-        return str(hash(tuple(mqc_ids)))
-
-    @property
-    @lru_cache()
     def _data_version(self) -> str:
         """Return server data version.
 
@@ -305,8 +269,6 @@ class BaseTables(abc.ABC):
         if data is None:
             if data_type == self.META:
                 data = self._download_metadata()
-            elif data_type == self.QC:
-                data = self._download_qc()
             else:
                 data = asyncio.run(self._download_data(data_type))
 
@@ -317,8 +279,6 @@ class BaseTables(abc.ABC):
         """Return full cache file path."""
         if data_type == self.META:
             version = self._metadata_version
-        elif data_type == self.QC:
-            version = self._qc_version
         else:
             version = self._data_version
 
@@ -469,10 +429,6 @@ class BaseTables(abc.ABC):
         meta.index.name = "sample_id"
 
         return meta
-
-    @abc.abstractmethod
-    def _download_qc(self) -> pd.DataFrame:
-        pass
 
     def _get_data_uri(self, data: Data, data_type: str) -> str:
         field_name = self.data_type_to_field_name[data_type]

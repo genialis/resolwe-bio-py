@@ -6,7 +6,7 @@ import time
 import numpy as np
 
 import resdk
-from resdk.tables import RNATables, VariantTables
+from resdk.tables import QCTables, RNATables, VariantTables
 
 from ..base import BaseResdkFunctionalTest
 
@@ -123,3 +123,46 @@ class TestVariantTables(BaseResdkFunctionalTest):
         self.assertEqual(self.vt.filter.index.tolist(), [112166, 112167])
         self.assertIn("14_52004545_C>CT", self.vt.filter.columns)
         self.assertEqual(self.vt.filter.loc[112166, "14_52004545_C>CT"], "PASS")
+
+
+class TestQCTables(BaseResdkFunctionalTest):
+    def setUp(self):
+        self.cache_dir = tempfile.mkdtemp()
+        self.test_server_url = TABLES_LIVE_URL
+        self.test_collection_slug = "qctables-test-collection"
+        self.res = resdk.Resolwe(
+            url=self.test_server_url,
+            username=TABLES_USER_EMAIL,
+            password=TABLES_USER_PASSWORD,
+        )
+        self.collection = self.res.collection.get(self.test_collection_slug)
+        self.qt = QCTables(self.collection, cache_dir=self.cache_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.cache_dir)
+
+    def test_general_alignment(self):
+        self.assertEqual(
+            self.qt.general_alignment.loc[143064, "mapped_reads"], 36715200.0
+        )
+
+    def test_rnaseq_qc(self):
+        self.assertEqual(self.qt.rnaseq.loc[143064, "gc_content_raw"], 50.0)
+
+    def test_chipseq_qc(self):
+        self.assertEqual(
+            self.qt.chipseq.loc[139801, "control_prepeak_mapped_percentage"],
+            0.9018,
+        )
+
+    def test_wgs_qc(self):
+        self.assertEqual(
+            self.qt.wgs.loc[139806, "picard_insert_min_size"],
+            2.0,
+        )
+
+    def test_meta(self):
+        self.assertIn("general.species", self.qt.meta.columns)
+
+    def test_collection_slug(self):
+        self.assertEqual(self.qt.collection.slug, self.test_collection_slug)

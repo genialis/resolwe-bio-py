@@ -22,214 +22,12 @@ import numpy as np
 import pandas as pd
 
 from resdk.resources import Collection, Data
+from resdk.tables.qc import QCTables
 from resdk.utils.table_cache import load_pickle, save_pickle
 
 from .base import BaseTables
-from .utils import batch_download
 
 CHUNK_SIZE = 1000
-
-
-MQC_GENERAL_COLUMNS = [
-    {
-        "name": "FastQC (raw)_mqc-generalstats-fastqc_raw-total_sequences",
-        "slug": "total_read_count_raw",
-        "type": "Int64",
-        "agg_func": "sum",
-    },
-    {
-        "name": "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-total_sequences",
-        "slug": "total_read_count_trimmed",
-        "type": "Int64",
-        "agg_func": "sum",
-    },
-    {
-        "name": "FastQC (raw)_mqc-generalstats-fastqc_raw-percent_gc",
-        "slug": "gc_content_raw",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-percent_gc",
-        "slug": "gc_content_trimmed",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "FastQC (raw)_mqc-generalstats-fastqc_raw-percent_duplicates",
-        "slug": "seq_duplication_raw",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-percent_duplicates",
-        "slug": "seq_duplication_trimmed",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "FastQC (raw)_mqc-generalstats-fastqc_raw-avg_sequence_length",
-        "slug": "avg_seq_length_raw",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-avg_sequence_length",
-        "slug": "avg_seq_length_trimmed",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "STAR_mqc-generalstats-star-uniquely_mapped_percent",
-        "slug": "mapped_reads_percent",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "STAR_mqc-generalstats-star-uniquely_mapped",
-        "slug": "mapped_reads",
-        "type": "Int64",
-        "agg_func": "sum",
-    },
-    {
-        "name": "STAR (Globin)_mqc-generalstats-star_globin-uniquely_mapped_percent",
-        "slug": "mapped_reads_percent_globin",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "STAR (Globin)_mqc-generalstats-star_globin-uniquely_mapped",
-        "slug": "mapped_reads_globin",
-        "type": "Int64",
-        "agg_func": "sum",
-    },
-    {
-        "name": "STAR (rRNA)_mqc-generalstats-star_rrna-uniquely_mapped_percent",
-        "slug": "mapped_reads_percent_rRNA",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "STAR (rRNA)_mqc-generalstats-star_rrna-uniquely_mapped",
-        "slug": "mapped_reads_rRNA",
-        "type": "Int64",
-        "agg_func": "sum",
-    },
-    {
-        "name": "featureCounts_mqc-generalstats-featurecounts-percent_assigned",
-        "slug": "fc_assigned_reads_percent",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "featureCounts_mqc-generalstats-featurecounts-Assigned",
-        "slug": "fc_assigned_reads",
-        "type": "Int64",
-        "agg_func": "sum",
-    },
-    {
-        "name": "STAR quantification_mqc-generalstats-star_quantification-of_assigned_reads",
-        "slug": "star_assigned_reads_percent",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "STAR quantification_mqc-generalstats-star_quantification-Assigned_reads",
-        "slug": "star_assigned_reads",
-        "type": "Int64",
-        "agg_func": "sum",
-    },
-    {
-        "name": "Salmon_mqc-generalstats-salmon-percent_mapped",
-        "slug": "salmon_assigned_reads_percent",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "Salmon_mqc-generalstats-salmon-num_mapped",
-        "slug": "salmon_assigned_reads",
-        "type": "Int64",
-        "agg_func": "sum",
-    },
-    {
-        "name": "QoRTs_mqc-generalstats-qorts-Genes_PercentWithNonzeroCounts",
-        "slug": "nonzero_count_features_percent",
-        "type": "float64",
-        "agg_func": "mean",
-    },
-    {
-        "name": "QoRTs_mqc-generalstats-qorts-NumberOfChromosomesCovered",
-        "slug": "contigs_covered",
-        "type": "Int64",
-        "agg_func": "mean",
-    },
-    {
-        "slug": "strandedness_code",
-        "type": "string",
-    },
-    {
-        "slug": "genome_build",
-        "type": "string",
-    },
-]
-
-
-def general_multiqc_parser(file_object, name, column_names):
-    """General parser for MultiQC files."""
-    df = pd.read_csv(file_object, sep="\t", index_col=0)
-
-    # Keep only specified columns:
-    df = df[
-        [
-            column.get("name", "")
-            for column in column_names
-            if column.get("name", "") in df.columns
-        ]
-    ]
-    # Rename
-    df = df.rename(
-        columns={
-            column.get("name", ""): column["slug"]
-            for column in column_names
-            if column.get("name", "") in df.columns
-        }
-    )
-
-    # Perform aggregation
-    series = df.agg(
-        {
-            column["slug"]: column["agg_func"]
-            for column in column_names
-            if column["slug"] in df.columns
-        }
-    )
-    series.name = name
-    return series
-
-
-def multiqc_general_stats_parser(file_object, name):
-    """Parse "multiqc_general_stats.txt" file."""
-    return general_multiqc_parser(file_object, name, MQC_GENERAL_COLUMNS)
-
-
-def multiqc_strand_parser(file_object, name):
-    """Parse "multiqc_library_strandedness.txt" file."""
-    df = pd.read_csv(file_object, sep="\t", index_col=0)
-    return pd.Series(
-        df["Strandedness code"].iloc[0],
-        index=["strandedness_code"],
-        name=name,
-    )
-
-
-def multiqc_build_parser(file_object, name):
-    """Parse "multiqc_sample_info.txt" file."""
-    df = pd.read_csv(file_object, sep="\t", index_col=0)
-    return pd.Series(
-        df["Genome Build"].iloc[0],
-        index=["genome_build"],
-        name=name,
-    )
 
 
 class RNATables(BaseTables):
@@ -441,65 +239,11 @@ class RNATables(BaseTables):
         """Return full cache file path."""
         if data_type == self.META:
             version = self._metadata_version
-        elif data_type == self.QC:
-            version = self._qc_version
         else:
             version = self._data_version
 
         cache_file = f"{self.collection.slug}_{data_type}_{self.expression_source}_{self.expression_process_slug}_{version}.pickle"
         return os.path.join(self.cache_dir, cache_file)
-
-    def _download_qc(self) -> pd.DataFrame:
-        """Download sample QC data and transform into table.
-
-        QC info can be sourced from multiple files and multiple columns
-        in those files.
-        """
-        mqc_db = {}
-        for mqc in self.collection.data.filter(
-            type="data:multiqc",
-            status="OK",
-            ordering="created",
-            entity__isnull=False,
-            fields=["id", "entity__id"],
-        ):
-            if mqc.sample.id in mqc_db:
-                warnings.warn(
-                    f"Sample with ID={mqc.sample.id} has multiple MultiQC Data. "
-                    "Using the latest one.",
-                    UserWarning,
-                )
-            mqc_db[mqc.sample.id] = {
-                "mqc_id": mqc.id,
-                "uri_general": f"{mqc.id}/multiqc_data/multiqc_general_stats.txt",
-                "uri_strand": f"{mqc.id}/multiqc_data/multiqc_library_strandedness.txt",
-                "uri_build": f"{mqc.id}/multiqc_data/multiqc_sample_info.txt",
-            }
-
-        df = pd.DataFrame(index=[sample.id for sample in self._samples])
-
-        parsers = {
-            "uri_general": multiqc_general_stats_parser,
-            "uri_strand": multiqc_strand_parser,
-            "uri_build": multiqc_build_parser,
-        }
-        for type_, parser in parsers.items():
-            uris = [item[type_] for item in mqc_db.values()]
-            qc = batch_download(self.resolwe, uris, parser)
-            qc = qc.rename(index={value[type_]: key for key, value in mqc_db.items()})
-            df = df.merge(qc, how="left", left_index=True, right_index=True)
-
-        # Cast to correct dtype
-        BUILD_COLUMN = [{"slug": "genome_build", "type": "category"}]
-        STRANDEDNESS_COLUMN = [{"slug": "strandedness_code", "type": "category"}]
-        column_types = {
-            c["slug"]: c["type"]
-            for c in MQC_GENERAL_COLUMNS + BUILD_COLUMN + STRANDEDNESS_COLUMN
-            if c["slug"] in df.columns
-        }
-        df = df[column_types.keys()].astype(column_types)
-
-        return df
 
     def _parse_file(self, file_obj, sample_id, data_type):
         """Parse file object and return a one DataFrame line."""
@@ -559,3 +303,17 @@ class RNATables(BaseTables):
             )
             mapping.update({f.feature_id: f.name for f in features})
         return mapping
+
+    @property
+    @lru_cache()
+    def qc(self) -> pd.DataFrame:
+        """Return QC table as a pandas DataFrame object.
+
+        :return: table of QC values
+        """
+        warnings.warn(
+            "Method `RNATables(<collection>).qc` will be deprecated in next major "
+            "release. Use QCTables(<collection>).rnaseq to get the same results.",
+            DeprecationWarning,
+        )
+        return QCTables(self.collection).rnaseq

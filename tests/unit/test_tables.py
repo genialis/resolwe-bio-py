@@ -264,23 +264,6 @@ class TestTables(unittest.TestCase):
         with self.assertRaises(ValueError):
             version = ct1._metadata_version
 
-    def test_qc_version(self):
-        self.collection.data.filter().iterate = self.web_request([self.data])
-
-        ct = RNATables(self.collection)
-        version = ct._qc_version
-        self.assertEqual(version, str(hash(tuple([12345]))))
-
-        # use cache
-        t = time()
-        version = ct._qc_version
-        self.assertTrue(time() - t < 0.1)
-
-        self.collection.data.filter().iterate = self.web_request([])
-        ct1 = RNATables(self.collection)
-        with self.assertRaises(ValueError):
-            version = ct1._qc_version
-
     def test_data_version(self):
         ct = RNATables(self.collection)
         version = ct._data_version
