@@ -45,12 +45,14 @@ from .methylation import MethylationTables  # noqa
 from .microarray import MATables  # noqa
 from .ml_ready import MLTables  # noqa
 from .rna import RNATables  # noqa
+from .qc import QCTables  # noqa
 from .variant import VariantTables  # noqa
 
 __all__ = (
     "MATables",
     "MLTables",
     "MethylationTables",
+    "QCTables",
     "RNATables",
     "VariantTables",
 )
