@@ -19,6 +19,7 @@ import warnings
 from collections import Counter, defaultdict
 from functools import lru_cache
 from io import BytesIO
+from pathlib import Path
 from typing import Callable, Dict, List, Optional
 from urllib.parse import urljoin, urlparse
 
@@ -28,12 +29,7 @@ import pytz
 from tqdm import tqdm
 
 from resdk.resources import Collection, Data, Sample
-from resdk.utils.table_cache import (
-    cache_dir_resdk,
-    clear_cache_dir_resdk,
-    load_pickle,
-    save_pickle,
-)
+from resdk.utils.table_cache import cache_dir_resdk, load_pickle, save_pickle
 
 # See _download_data function for in-depth explanation of this.
 EXP_ASYNC_CHUNK_SIZE = 50
@@ -112,10 +108,13 @@ class BaseTables(abc.ABC):
         """
         return self._load_fetch(self.META)
 
-    @staticmethod
-    def clear_cache() -> None:
+    def clear_cache(self) -> None:
         """Remove ReSDK cache files from the default cache directory."""
-        clear_cache_dir_resdk()
+        # Clear cache for the collection
+        cache_dir = cache_dir_resdk()
+        for f in Path(cache_dir).iterdir():
+            if f.name.startswith(self.collection.slug):
+                f.unlink()
 
     @property
     @lru_cache()
