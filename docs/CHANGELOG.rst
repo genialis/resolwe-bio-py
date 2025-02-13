@@ -17,6 +17,7 @@ Added
 - Add a resolwe method for fetching the server module versions
 - Add support for ``Python 3.13``
 - Add serializer support to simplify custom serialization of resources
+- Add variant related objects
 
 Changed
 -------

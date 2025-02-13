@@ -40,6 +40,10 @@ class Sample(SampleUtilsMixin, BaseCollection):
         self._background = None
         #: is this sample background to any other sample?
         self._is_background = None
+        #: list of ``Variant`` objects attached to the sample
+        self._variants = None
+        #: list of ``VariantExperiment`` objects attached to the sample
+        self._experiments = None
 
         super().__init__(resolwe, **model_data)
 
@@ -49,6 +53,8 @@ class Sample(SampleUtilsMixin, BaseCollection):
         self._relations = None
         self._background = None
         self._is_background = None
+        self._variants = None
+        self._experiments = None
 
         super().update()
 
@@ -60,6 +66,33 @@ class Sample(SampleUtilsMixin, BaseCollection):
             self._data = self.resolwe.data.filter(entity=self.id)
 
         return self._data
+
+    @property
+    def experiments(self):
+        """Get experiments."""
+        if self._experiments is None:
+            self._experiments = self.resolwe.variant_experiment.filter(
+                variant_calls__sample=self.id
+            )
+        return self._experiments
+
+    @property
+    def latest_experiment(self):
+        """Get latest experiment."""
+        return self.experiments.filter(ordering="-timestamp", limit=1)[0]
+
+    @property
+    def variants(self):
+        """Get variants."""
+        if self._variants is None:
+            self._variants = self.resolwe.variant.filter(variant_calls__sample=self.id)
+        return self._variants
+
+    def variants_by_experiment(self, experiment):
+        """Get variants for sample detected by the given experiment."""
+        return self.resolwe.variant.filter(
+            variant_calls__sample=self.id, variant_calls__experiment=experiment.id
+        )
 
     @property
     def collection(self):
