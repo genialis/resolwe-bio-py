@@ -3,10 +3,12 @@
 import copy
 import logging
 import operator
+from typing import Optional
 
 from ..constants import ALL_PERMISSIONS
 from ..utils.decorators import assert_object_exists
 from .permissions import PermissionsManager
+from .serializer import ResourceDictSerializer, ResourceSerializer
 from .utils import parse_resolwe_datetime
 
 
@@ -30,9 +32,9 @@ class BaseResource:
     delete_warning_bulk = "Do you really want to delete {} objects?[yN]"
     rename_sample_to_entity = True
 
-    READ_ONLY_FIELDS = ("id",)
-    UPDATE_PROTECTED_FIELDS = ()
-    WRITABLE_FIELDS = ()
+    READ_ONLY_FIELDS: tuple[str, ...] = ("id",)
+    UPDATE_PROTECTED_FIELDS: tuple[str, ...] = ()
+    WRITABLE_FIELDS: tuple[str, ...] = ()
 
     all_permissions = []  # override this in subclass
 
@@ -43,6 +45,8 @@ class BaseResource:
         self.api = operator.attrgetter(self.endpoint)(resolwe.api)
         self.resolwe = resolwe
         self.logger = logging.getLogger(__name__)
+        # Use ResourceDictSerializer as default serializer.
+        self.serializer: ResourceSerializer = ResourceDictSerializer()
 
         #: unique identifier of an object
         self.id = None
@@ -78,44 +82,61 @@ class BaseResource:
         response = self.api(self.id).get()
         self._update_fields(response)
 
+    def serialize(self):
+        """Serialize the object."""
+        return self.serializer.serialize(self)
+
     def _dehydrate_resources(self, obj):
-        """Iterate through object and replace all objects with their ids."""
-        # Prevent circular imports:
-        from .descriptor import DescriptorSchema
-        from .process import Process
+        """Return the serialized obj.
 
-        if isinstance(obj, DescriptorSchema) or isinstance(obj, Process):
-            # Slug can only be given at create requests (id not present yet)
-            if not self.id:
-                return {"slug": obj.slug}
+        Special attention is given to the following cases:
+        - obj is a BaseResource: return the serialized object.
+        - obj is a list: return a list of serialized objects.
+        - obj is a dict: replace values with serialized objects.
 
-            return {"id": obj.id}
+        Otherwise, return the object as is.
+        """
         if isinstance(obj, BaseResource):
-            return {"id": obj.id}
+            return obj.serialize()
         if isinstance(obj, list):
-            return [self._dehydrate_resources(element) for element in obj]
+            return [element._dehydrate_resources(element) for element in obj]
         if isinstance(obj, dict):
             return {key: self._dehydrate_resources(value) for key, value in obj.items()}
-
         return obj
+
+    def _field_changed(self, field_name):
+        """Check if local field value is different from the server."""
+        current_value = getattr(self, field_name, None)
+        original_value = self._original_values.get(field_name, None)
+
+        # The default implementation only checks for equality, since we do not support
+        # nested updates in most cases.
+        if isinstance(current_value, BaseResource) and original_value:
+            # The original value can be a dict for nested serialized resources or only
+            # int for primary key serialized resources.
+            current_id = current_value.id
+            if isinstance(original_value, dict):
+                original_id = original_value.get("id", None)
+            else:
+                original_id = original_value
+            return current_id != original_id
+        else:
+            return current_value != original_value
 
     def save(self):
         """Save resource to the server."""
 
-        def field_changed(field_name):
-            """Check if local field value is different from the server."""
-            current_value = getattr(self, field_name, None)
-            original_value = self._original_values.get(field_name, None)
+        def sample_to_entity(payload):
+            """Rename sample to entity.
 
-            if isinstance(current_value, BaseResource) and original_value:
-                # TODO: Check that current and original are instances of the same resource class
-                return current_value.id != original_value.get("id", None)
-            else:
-                return current_value != original_value
+            Rename 'sample' to 'entity' if rename_sample_to_entity is set on model.
+            """
+            if "sample" in payload and self.rename_sample_to_entity:
+                payload["entity"] = payload.pop("sample")
 
         def assert_fields_unchanged(field_names):
             """Assert that fields in ``field_names`` were not changed."""
-            changed_fields = [name for name in field_names if field_changed(name)]
+            changed_fields = [name for name in field_names if self._field_changed(name)]
 
             if changed_fields:
                 msg = "Not allowed to change read only fields {}".format(
@@ -130,13 +151,12 @@ class BaseResource:
 
             payload = {}
             for field_name in self.WRITABLE_FIELDS:
-                if field_changed(field_name):
+                if self._field_changed(field_name):
                     payload[field_name] = self._dehydrate_resources(
                         getattr(self, field_name)
                     )
-            if "sample" in payload:
-                payload["entity"] = payload.pop("sample")
 
+            sample_to_entity(payload)
             if payload:
                 response = self.api(self.id).patch(payload)
                 self._update_fields(response)
@@ -151,9 +171,7 @@ class BaseResource:
                 if getattr(self, field_name) is not None
             }
 
-            if "sample" in payload:
-                payload["entity"] = payload.pop("sample")
-
+            sample_to_entity(payload)
             from .annotations import AnnotationValue
 
             # Annotation models have primarykey serializer.
