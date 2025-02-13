@@ -21,6 +21,8 @@ Added
 Changed
 -------
 - Drop support for ``Python 3.8``
+- Modify ``clear_cache`` method of ``BaseTables`` to clear only the
+  cache of the specified collection
 
 
 ===================

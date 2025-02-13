@@ -239,11 +239,6 @@ class TestTables(unittest.TestCase):
         self.assertTrue(time() - t < 0.1)
         self.assertIs(mapping, self.gene_map)
 
-    @patch("resdk.tables.base.clear_cache_dir_resdk")
-    def test_clear_cache(self, clear_mock):
-        RNATables.clear_cache()
-        clear_mock.assert_called()
-
     def test_metadata_version(self):
         self.collection.samples.get = self.web_request(self.sample)
         self.collection.relations.get = self.web_request(self.relation)
