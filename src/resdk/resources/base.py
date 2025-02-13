@@ -28,6 +28,7 @@ class BaseResource:
     full_search_paramater = None
     delete_warning_single = "Do you really want to delete {}?[yN]"
     delete_warning_bulk = "Do you really want to delete {} objects?[yN]"
+    rename_sample_to_entity = True
 
     READ_ONLY_FIELDS = ("id",)
     UPDATE_PROTECTED_FIELDS = ()

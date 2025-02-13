@@ -42,6 +42,9 @@ Changed
 Added
 -----
 - Add ``restart`` method to the ``Data`` resource
+- Add property ``rename_sample_to_entity`` to rename ``sample`` to ``entity``
+  in ``Resolwe`` originating models. Models from ``Resolwe Bio`` repository
+  already use ``sample`` instead of ``entity`` in the backend.
 
 Fixed
 -----
