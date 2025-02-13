@@ -30,10 +30,12 @@ class Sample(SampleUtilsMixin, BaseCollection):
     collection = DictResourceField(
         resource_class_name="Collection", access_type=FieldAccessType.WRITABLE
     )
-    data = QueryRelatedField("Data")
-    relations = QueryRelatedField("Relation")
-    annotations = QueryRelatedField("AnnotationValue")
-    predictions = QueryRelatedField("PredictionValue")
+    data = QueryRelatedField("Data", "entity")
+    relations = QueryRelatedField("Relation", "entity")
+    annotations = QueryRelatedField("AnnotationValue", "entity")
+    predictions = QueryRelatedField("PredictionValue", "entity")
+    variants = QueryRelatedField("Variant", "variant_calls__sample")
+    variant_calls = QueryRelatedField("VariantCall")
 
     def __init__(self, resolwe, **model_data):
         """Initialize attributes."""
@@ -44,12 +46,39 @@ class Sample(SampleUtilsMixin, BaseCollection):
         self._background = None
         #: is this sample background to any other sample?
         self._is_background = None
+        #: list of ``Variant`` objects attached to the sample
+        self._variants = None
+        #: list of ``VariantExperiment`` objects attached to the sample
+        self._experiments = None
 
     def update(self):
         """Clear cache and update resource fields from the server."""
         self._background = None
         self._is_background = None
+        self._variants = None
+        self._experiments = None
+
         super().update()
+
+    @property
+    def experiments(self):
+        """Get experiments."""
+        if self._experiments is None:
+            self._experiments = self.resolwe.variant_experiment.filter(
+                variant_calls__sample=self.id
+            )
+        return self._experiments
+
+    @property
+    def latest_experiment(self):
+        """Get latest experiment."""
+        return self.experiments.filter(ordering="-timestamp", limit=1)[0]
+
+    def variants_by_experiment(self, experiment):
+        """Get variants for sample detected by the given experiment."""
+        return self.resolwe.variant.filter(
+            variant_calls__sample=self.id, variant_calls__experiment=experiment.id
+        )
 
     @property
     def background(self):

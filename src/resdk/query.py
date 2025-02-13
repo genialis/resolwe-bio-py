@@ -184,8 +184,6 @@ class ResolweQuery:
     def _add_filter(self, filter_: dict):
         """Add filtering parameters."""
         for key, value in filter_.items():
-            # 'sample' is called 'entity' in the backend.
-            key = key.replace("sample", "entity")
             value = self._dehydrate_resources(value)
             if self._non_string_iterable(value):
                 value = ",".join(map(str, value))
