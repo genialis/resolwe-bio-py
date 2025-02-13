@@ -215,18 +215,39 @@ class BaseResource:
         else:
             return False
 
-    def _resource_setter(self, payload, resource, field):
-        """Set ``resource`` with ``payload`` on ``field``."""
+    def _get_resource(self, payload, resource):
+        """Get ``resource`` from ``payload``.
+
+        We process the following types of payloads:
+        - resource: return the resource as is.
+        - dict: create a resource from the dictionary.
+        - int: fetch the resource by the id.
+        - str: fetch the resource by the slug.
+        - list: recursively get resources from the list.
+
+        Other types of payloads are returned unchanged.
+        """
         if isinstance(payload, resource):
-            setattr(self, field, payload)
+            return payload
         elif isinstance(payload, dict):
-            setattr(self, field, resource(resolwe=self.resolwe, **payload))
+            return resource(resolwe=self.resolwe, **payload)
         elif isinstance(payload, int):
-            setattr(self, field, resource.fetch_object(self.resolwe, id=payload))
+            return resource.fetch_object(self.resolwe, id=payload)
         elif isinstance(payload, str):
-            setattr(self, field, resource.fetch_object(self.resolwe, slug=payload))
-        else:
-            setattr(self, field, payload)
+            return resource.fetch_object(self.resolwe, slug=payload)
+        elif isinstance(payload, list):
+            return [self._get_resource(item, resource) for item in payload]
+        return payload
+
+    def _resource_setter(
+        self, payload, resource, field, serializer: Optional[ResourceSerializer] = None
+    ):
+        """Set ``resource`` with ``payload`` on ``field``.
+
+        Optionally replace the default serializer with the given one.
+        """
+        resource = self._get_resource(payload, resource)
+        setattr(self, field, resource)
 
 
 class BaseResolweResource(BaseResource):

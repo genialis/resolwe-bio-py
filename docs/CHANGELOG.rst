@@ -20,6 +20,7 @@ Added
 Changed
 -------
 - Drop support for ``Python 3.8``
+- Support list of resources in ``_resource_setter`` method
 
 
 ===================
