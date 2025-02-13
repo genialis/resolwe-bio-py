@@ -41,7 +41,7 @@ Resource classes
 .. autoclass:: resdk.resources.DescriptorSchema
    :members:
    :inherited-members:
-   
+
 .. autoclass:: resdk.resources.AnnotationValue
    :members:
    :inherited-members:
@@ -63,6 +63,26 @@ Resource classes
    :inherited-members:
 
 .. autoclass:: resdk.resources.PredictionField
+   :members:
+   :inherited-members:
+
+.. autoclass:: resdk.resources.Variant
+   :members:
+   :inherited-members:
+
+.. autoclass:: resdk.resources.VariantAnnotation
+   :members:
+   :inherited-members:
+
+.. autoclass:: resdk.resources.VariantAnnotationTranscript
+   :members:
+   :inherited-members:
+
+.. autoclass:: resdk.resources.VariantCall
+   :members:
+   :inherited-members:
+
+.. autoclass:: resdk.resources.VariantExperiment
    :members:
    :inherited-members:
 
@@ -115,6 +135,13 @@ from .process import Process
 from .relation import Relation
 from .sample import Sample
 from .user import Group, User
+from .variants import (
+    Variant,
+    VariantAnnotation,
+    VariantAnnotationTranscript,
+    VariantCall,
+    VariantExperiment,
+)
 
 __all__ = (
     "AnnotationField",
@@ -133,4 +160,9 @@ __all__ = (
     "Process",
     "Relation",
     "User",
+    "Variant",
+    "VariantAnnotation",
+    "VariantAnnotationTranscript",
+    "VariantCall",
+    "VariantExperiment",
 )
