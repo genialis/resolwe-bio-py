@@ -55,6 +55,10 @@ from .resources import (
     Relation,
     Sample,
     User,
+    Variant,
+    VariantAnnotation,
+    VariantCall,
+    VariantExperiment,
 )
 from .resources.base import BaseResource
 from .resources.kb import Feature, Mapping
@@ -139,6 +143,10 @@ class Resolwe:
         Relation: "relation",
         Sample: "sample",
         User: "user",
+        Variant: "variant",
+        VariantAnnotation: "variant_annotation",
+        VariantCall: "variant_calls",
+        VariantExperiment: "variant_experiment",
     }
     # Map ResolweQuery name to it's slug_field
     slug_field_mapping = {

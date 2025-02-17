@@ -16,10 +16,13 @@ Added
 - Add version to annotation field
 - Add a resolwe method for fetching the server module versions
 - Add support for ``Python 3.13``
+- Add serializer support to simplify custom serialization of resources
+- Add variant related objects
 
 Changed
 -------
 - Drop support for ``Python 3.8``
+- Support list of resources in ``_resource_setter`` method
 
 
 ===================
@@ -42,6 +45,9 @@ Changed
 Added
 -----
 - Add ``restart`` method to the ``Data`` resource
+- Add property ``rename_sample_to_entity`` to rename ``sample`` to ``entity``
+  in ``Resolwe`` originating models. Models from ``Resolwe Bio`` repository
+  already use ``sample`` instead of ``entity`` in the backend.
 
 Fixed
 -----
