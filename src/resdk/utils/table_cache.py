@@ -3,6 +3,7 @@
 import os
 import pickle
 import sys
+from pathlib import Path
 from shutil import rmtree
 from typing import Any
 
@@ -76,5 +77,6 @@ def save_pickle(obj: Any, pickle_file: str, override=False) -> None:
     :return:
     """
     if not os.path.exists(pickle_file) or override:
+        Path(os.path.dirname(pickle_file)).mkdir(parents=True, exist_ok=True)
         with open(pickle_file, "wb") as handle:
             pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)

@@ -16,10 +16,13 @@ Added
 - Add version to annotation field
 - Add a resolwe method for fetching the server module versions
 - Add support for ``Python 3.13``
+- Add ``QCTables`` class to the ``tables`` module
 
 Changed
 -------
 - Drop support for ``Python 3.8``
+- Modify ``clear_cache`` method of ``BaseTables`` to clear only the
+  cache of the specified collection
 
 
 ===================
