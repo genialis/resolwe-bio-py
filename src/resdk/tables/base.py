@@ -225,12 +225,24 @@ class BaseTables(abc.ABC):
 
         # Get newest AnnotationValue timestamp
         try:
-            newest_ann_value = self.resolwe.annotation_value.get(
-                entity__collection=self.collection.id,
-                ordering="-modified",
-                limit=1,
-            )
-            timestamps.append(newest_ann_value.modified)
+            newest_stamps = []
+            # Getting annotation values for large collection breaks the server.
+            # Instead make smaller queries for a single batch of samples
+            batch_size = 100
+            for i in self.tqdm(
+                range(0, len(self._samples), batch_size),
+                desc="Getting latest annotation_value timestamp",
+            ):
+                batch_sample_ids = [s.id for s in self._samples[i : i + batch_size]]
+                newest_ann_value = self.resolwe.annotation_value.get(
+                    entity__in=batch_sample_ids,
+                    ordering="-modified",
+                    limit=1,
+                )
+                newest_stamps.append(newest_ann_value.modified)
+
+            timestamps.append(sorted(newest_stamps)[-1])
+
         except LookupError:
             pass
 
@@ -294,20 +306,25 @@ class BaseTables(abc.ABC):
             "DATE": "datetime64[ns]",
         }
 
-        annotations = []
-        # Make one query for all values instead of one per sample
-        avs = self.resolwe.annotation_value.filter(
-            entity__collection=self.collection.id
-        )
-
         sample_data = defaultdict(dict)
         sample_dtypes = defaultdict(dict)
-        for ann_value in avs:
-            sample_data[ann_value.sample.id][str(ann_value.field)] = ann_value.value
-            sample_dtypes[ann_value.sample.id][str(ann_value.field)] = TYPE_TO_DTYPE[
-                ann_value.field.type.upper()
-            ]
+        # Getting annotation values for large collection breaks the server.
+        # Instead make smaller queries for a single batch of samples
+        batch_size = 100
+        for i in self.tqdm(
+            range(0, len(self._samples), batch_size), desc="Downloading annotations"
+        ):
+            batch_sample_ids = [s.id for s in self._samples[i : i + batch_size]]
+            avs = self.resolwe.annotation_value.filter(
+                entity__in=batch_sample_ids,
+            )
+            for ann_value in avs:
+                sample_data[ann_value.sample.id][str(ann_value.field)] = ann_value.value
+                sample_dtypes[ann_value.sample.id][str(ann_value.field)] = (
+                    TYPE_TO_DTYPE[ann_value.field.type.upper()]
+                )
 
+        annotations = []
         for sample in self._samples:
             data = sample_data.get(sample.id, {})
             dtypes = sample_dtypes.get(sample.id, {})
