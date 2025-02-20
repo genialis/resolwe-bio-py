@@ -180,6 +180,22 @@ def samtools_idxstats_parser(file_object, name):
     return series
 
 
+def qorts_genebody_parser(file_object, name):
+    """Parse QoRTs genebody coverage file."""
+
+    df = pd.read_csv(file_object, sep="\t", index_col=0)
+
+    if df.empty:
+        return pd.Series(name=name)
+
+    df.columns = df.columns.astype(float).round(1)
+    df_sorted = df[sorted(df.columns, key=float)]
+
+    series = df_sorted.squeeze()
+    series.name = name
+    return series
+
+
 class QCTables(BaseTables):
     """A helper class to fetch collection's QC data.
 
@@ -358,7 +374,7 @@ class QCTables(BaseTables):
         },
         QORTS_GENEBODY: {
             "file": "multiqc_data/multiqc_genebody_qc-plot.txt",
-            "parser": general_multiqc_parser,
+            "parser": qorts_genebody_parser,
             "column_map": [],
             "groups": [],
         },
@@ -394,6 +410,10 @@ class QCTables(BaseTables):
             return self.DATA_TYPES[data_type]["parser"](
                 file_object=file_obj, name=sample_id
             )
+        elif data_type == self.QORTS_GENEBODY:
+            return self.DATA_TYPES[data_type]["parser"](
+                file_object=file_obj, name=sample_id
+            )
         else:
             if data_type in self.DATA_TYPES:
                 parser_func = self.DATA_TYPES[data_type]["parser"]
@@ -422,7 +442,14 @@ class QCTables(BaseTables):
         data = [self._load_fetch(data_type) for data_type in data_types]
         df = pd.concat(data, axis=1)
 
-        return df
+    @property
+    @lru_cache()
+    def idxstats(self) -> pd.DataFrame:
+        """Return mapped read segment counts from samtools idxstats."""
+        df = self.samtools_idxstats
+        df_mapped = df.loc[:, df.columns.get_level_values(1) == "mapped_segments"]
+        df_mapped.columns = df_mapped.columns.droplevel(1)
+        return df_mapped
 
     def __getattr__(self, name):
         """Dynamically handle property fetching for data types."""
