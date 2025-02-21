@@ -442,14 +442,43 @@ class QCTables(BaseTables):
         data = [self._load_fetch(data_type) for data_type in data_types]
         df = pd.concat(data, axis=1)
 
-    @property
+        return df
+
     @lru_cache()
-    def idxstats(self) -> pd.DataFrame:
-        """Return mapped read segment counts from samtools idxstats."""
-        df = self.samtools_idxstats
-        df_mapped = df.loc[:, df.columns.get_level_values(1) == "mapped_segments"]
+    def fetch_idxstats(self, norm_method=None) -> pd.DataFrame:
+        """Return mapped read segment counts or their normalized values for each contig."""
+        idxstats_df = self.samtools_idxstats
+
+        df_mapped = idxstats_df.loc[
+            :, idxstats_df.columns.get_level_values(1) == "mapped_segments"
+        ]
         df_mapped.columns = df_mapped.columns.droplevel(1)
-        return df_mapped
+
+        if norm_method:
+            if norm_method == "cpm":
+                df = df_mapped.div(df_mapped.sum(axis=1), axis=0) * 1e6
+            elif norm_method in ["rpk", "rpkm", "tpm"]:
+                contig_lengths = idxstats_df.loc[
+                    :, idxstats_df.columns.get_level_values(1) == "contig_length"
+                ]
+                contig_lengths.columns = contig_lengths.columns.droplevel(1)
+                rpk_df = df_mapped.div(contig_lengths / 1e3, axis=0)
+
+                if norm_method == "rpk":
+                    df = rpk_df
+                elif norm_method == "rpkm":
+                    df = rpk_df.div(df_mapped.sum(axis=1) / 1e6, axis=0)
+                elif norm_method == "tpm":
+                    df = rpk_df.div(rpk_df.sum(axis=1) / 1e6, axis=0)
+            else:
+                raise ValueError(
+                    f"Normalization method '{norm_method}' is not supported. "
+                    f"Choose one of the following: ['cpm', 'rpk', 'rpkm', 'tpm']."
+                )
+        else:
+            df = df_mapped
+
+        return df
 
     def __getattr__(self, name):
         """Dynamically handle property fetching for data types."""
