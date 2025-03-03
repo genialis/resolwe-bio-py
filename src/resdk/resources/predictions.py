@@ -53,7 +53,9 @@ class PredictionGroup(BaseResource):
     # initialized.
     endpoint = "prediction_group"
 
-    READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS + ("name", "sort_order", "label")
+    READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS
+
+    WRITABLE_FIELDS = BaseResource.WRITABLE_FIELDS + ("name", "sort_order", "label")
 
     def __init__(self, resolwe: "Resolwe", **model_data):
         """Initialize the instance.
