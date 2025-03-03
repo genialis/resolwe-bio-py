@@ -2,7 +2,7 @@
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, NamedTuple, Optional, Union
+from typing import TYPE_CHECKING, NamedTuple, Optional, Type, Union
 
 from ..utils.decorators import assert_object_exists
 from .base import BaseResource
@@ -18,6 +18,18 @@ class PredictionType(Enum):
 
     SCORE = "SCORE"
     CLASS = "CLASS"
+
+    @property
+    def factory(
+        self,
+    ) -> Union[Type["ScorePredictionType"], Type["ClassPredictionType"]]:
+        """Get the prediction type factory."""
+        if self == PredictionType.SCORE:
+            return ScorePredictionType
+        elif self == PredictionType.CLASS:
+            return ClassPredictionType
+        else:
+            raise TypeError(f"Unknown prediction type {self.value}.")
 
 
 class ScorePredictionType(NamedTuple):
@@ -211,13 +223,8 @@ class PredictionValue(BaseResource):
         if isinstance(value, (ScorePredictionType, ClassPredictionType)):
             self._value = value
         elif isinstance(value, list):
-            factory = (
-                ScorePredictionType
-                if self.field.type == PredictionType.SCORE.value
-                else ClassPredictionType
-            )
             try:
-                value = factory(*value)
+                value = self.field.type.factory(*value)
             except TypeError:
                 raise TypeError(
                     "Value must be of type ScorePredictionType or ClassPredictionType."
