@@ -68,6 +68,13 @@ MINIMAL_SUPPORTED_VERSION_POSTFIX = "api/resdk_minimal_supported_version"
 SERVER_MODULE_VERSIONS_POSTFIX = "/about/versions"
 
 
+class AuthCookie(TypedDict):
+    """Authentication cookie dict."""
+
+    csrftoken: str
+    sessionid: str
+
+
 class ResolweResource(slumber.Resource):
     """Wrapper around slumber's Resource with custom exceptions handler."""
 
@@ -166,7 +173,7 @@ class Resolwe:
 
     session = None
 
-    def __init__(self, username=None, password=None, url=None):
+    def __init__(self, username=None, password=None, cookies=None, url=None):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
         self.session = requests.Session()
@@ -188,7 +195,7 @@ class Resolwe:
         # Check minimal supported version.
         self.version_check()
 
-        self._login(username=username, password=password)
+        self._login(username=username, password=password, cookies=cookies)
 
     def version_check(self):
         """Check that the server is compatible with the client."""
@@ -245,9 +252,12 @@ class Resolwe:
         self,
         username: Optional[str] = None,
         password: Optional[str] = None,
+        cookies: Optional[AuthCookie] = None,
         interactive: bool = False,
     ):
-        self.auth = ResAuth(username, password, self.url, interactive=interactive)
+        self.auth = ResAuth(
+            username, password, cookies, self.url, interactive=interactive
+        )
         self.session.cookies = requests.utils.cookiejar_from_dict(self.auth.cookies)
         self.api = ResolweAPI(
             urljoin(self.url, "/api/"),
@@ -581,13 +591,6 @@ class Resolwe:
         return self.api.base.data_usage.get(**query_params)
 
 
-class AuthCookie(TypedDict):
-    """Authentication cookie dict."""
-
-    csrftoken: str
-    sessionid: str
-
-
 class ResAuth(requests.auth.AuthBase):
     """HTTP Resolwe Authentication for Request object.
 
@@ -605,6 +608,7 @@ class ResAuth(requests.auth.AuthBase):
         self,
         username: Optional[str] = None,
         password: Optional[str] = None,
+        cookies: Optional[AuthCookie] = None,
         url: str = DEFAULT_URL,
         interactive: bool = False,
     ):
@@ -615,11 +619,20 @@ class ResAuth(requests.auth.AuthBase):
         self.automatic_login_url = urljoin(self.url, AUTOMATIC_LOGIN_POSTFIX)
         self.interactive_login_url = urljoin(self.url, INTERACTIVE_LOGIN_POSTFIX)
 
+        # Cookie authentication has precedence.
+        if cookies is not None:
+            self.cookies = cookies
+            self.logger.info("Using cookies for authentication.")
+            return
+
         if not interactive and (username is None or password is None):
             # Anonymous authentication
             return
 
-        if username and password:
+        if cookies:
+            self.cookies = cookies
+            self.logger.info("Successfully logged in.")            
+        elif username and password:
             self.cookies = self.automatic_login(username, password)
             self.logger.info(f"Successfully logged in as {username}.")
         else:
