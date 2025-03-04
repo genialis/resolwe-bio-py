@@ -143,7 +143,7 @@ class TestQCTables(BaseResdkFunctionalTest):
 
     def test_general_alignment(self):
         self.assertEqual(
-            self.qt.general_alignment.loc[143064, "mapped_reads"], 36715200.0
+            self.qt.general_alignment.loc[143064, "mapped_reads"], 36715200
         )
 
     def test_rnaseq_qc(self):

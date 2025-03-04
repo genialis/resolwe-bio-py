@@ -498,7 +498,7 @@ class BaseTables(abc.ABC):
         return sample_data
 
     async def _download_data(self, data_type: str) -> pd.DataFrame:
-        """Download data files and marge them into a pandas DataFrame.
+        """Download data files and merge them into a pandas DataFrame.
 
         During normal download of a single file a signed url is created on AWS
         and user is than redirected from Genialis server to the signed url.

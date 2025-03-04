@@ -3,6 +3,14 @@
 Column mappings with the GENERAL_ prefix are designated for the general summary table in MultiQC.
 In this case, the mappings are not split by file from which the information is extracted
 but based on the type of information.
+
+If ''name'' key includes a list, it means that the column names have changed between MultiQC versions.
+Using both names ensures that the correct column is selected regardless of the MultiQC version used
+when processing the data.
+
+Key ''scaling_factor'' is used to get values on a common scale. For example, if the value is provided in millions,
+the scaling factor is 1e6. This change in MultiQC generated summary table files was observed when updating
+the MultiQC version, where read counts were formatted in more human readable format (millions) instead of whole numbers.
 """
 
 SAMPLE_INFO_MAP = [
@@ -22,154 +30,228 @@ SAMPLE_INFO_MAP = [
 
 GENERAL_FASTQ_MAP = [
     {
-        "name": "FastQC (raw)_mqc-generalstats-fastqc_raw-total_sequences",
+        "name": [
+            "FastQC (raw)_mqc-generalstats-fastqc_raw-total_sequences",
+            "fastqc_raw-total_sequences",
+        ],
         "slug": "total_read_count_raw",
         "type": "Int64",
         "agg_func": "sum",
+        "scaling_factor": {"fastqc_raw-total_sequences": 1e6},
     },
     {
-        "name": "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-total_sequences",
+        "name": [
+            "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-total_sequences",
+            "fastqc_trimmed-total_sequences",
+        ],
         "slug": "total_read_count_trimmed",
         "type": "Int64",
         "agg_func": "sum",
+        "scaling_factor": {"fastqc_trimmed-total_sequences": 1e6},
     },
     {
-        "name": "FastQC (raw)_mqc-generalstats-fastqc_raw-percent_gc",
+        "name": [
+            "FastQC (raw)_mqc-generalstats-fastqc_raw-percent_gc",
+            "fastqc_raw-percent_gc",
+        ],
         "slug": "gc_content_raw",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-percent_gc",
+        "name": [
+            "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-percent_gc",
+            "fastqc_trimmed-percent_gc",
+        ],
         "slug": "gc_content_trimmed",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "FastQC (raw)_mqc-generalstats-fastqc_raw-percent_duplicates",
+        "name": [
+            "FastQC (raw)_mqc-generalstats-fastqc_raw-percent_duplicates",
+            "fastqc_raw-percent_duplicates",
+        ],
         "slug": "seq_duplication_raw",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-percent_duplicates",
+        "name": [
+            "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-percent_duplicates",
+            "fastqc_trimmed-percent_duplicates",
+        ],
         "slug": "seq_duplication_trimmed",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "FastQC (raw)_mqc-generalstats-fastqc_raw-avg_sequence_length",
+        "name": [
+            "FastQC (raw)_mqc-generalstats-fastqc_raw-avg_sequence_length",
+            "fastqc_raw-avg_sequence_length",
+        ],
         "slug": "avg_seq_length_raw",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-avg_sequence_length",
+        "name": [
+            "FastQC (trimmed)_mqc-generalstats-fastqc_trimmed-avg_sequence_length",
+            "fastqc_trimmed-avg_sequence_length",
+        ],
         "slug": "avg_seq_length_trimmed",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
 ]
 
 GENERAL_ALIGNMENT_MAP = [
     {
-        "name": "STAR_mqc-generalstats-star-uniquely_mapped_percent",
+        "name": [
+            "STAR_mqc-generalstats-star-uniquely_mapped_percent",
+            "star-uniquely_mapped_percent",
+        ],
         "slug": "mapped_reads_percent",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "STAR_mqc-generalstats-star-uniquely_mapped",
+        "name": ["STAR_mqc-generalstats-star-uniquely_mapped", "star-uniquely_mapped"],
         "slug": "mapped_reads",
         "type": "Int64",
         "agg_func": "sum",
+        "scaling_factor": {"star-uniquely_mapped": 1e6},
     },
     {
-        "name": "STAR (Globin)_mqc-generalstats-star_globin-uniquely_mapped_percent",
+        "name": [
+            "STAR (Globin)_mqc-generalstats-star_globin-uniquely_mapped_percent",
+            "star_globin-uniquely_mapped_percent",
+        ],
         "slug": "mapped_reads_percent_globin",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "STAR (Globin)_mqc-generalstats-star_globin-uniquely_mapped",
+        "name": [
+            "STAR (Globin)_mqc-generalstats-star_globin-uniquely_mapped",
+            "star_globin-uniquely_mapped",
+        ],
         "slug": "mapped_reads_globin",
         "type": "Int64",
         "agg_func": "sum",
+        "scaling_factor": {"star_globin-uniquely_mapped": 1e6},
     },
     {
-        "name": "STAR (rRNA)_mqc-generalstats-star_rrna-uniquely_mapped_percent",
+        "name": [
+            "STAR (rRNA)_mqc-generalstats-star_rrna-uniquely_mapped_percent",
+            "star_rrna-uniquely_mapped_percent",
+        ],
         "slug": "mapped_reads_percent_rRNA",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "STAR (rRNA)_mqc-generalstats-star_rrna-uniquely_mapped",
+        "name": [
+            "STAR (rRNA)_mqc-generalstats-star_rrna-uniquely_mapped",
+            "star_rrna-uniquely_mapped",
+        ],
         "slug": "mapped_reads_rRNA",
         "type": "Int64",
         "agg_func": "sum",
+        "scaling_factor": {"star_rrna-uniquely_mapped": 1e6},
     },
     {
-        "name": "STAR (downsampled)_mqc-generalstats-star_downsampled-uniquely_mapped_percent",
+        "name": [
+            "STAR (downsampled)_mqc-generalstats-star_downsampled-uniquely_mapped_percent",
+            "star_downsampled-uniquely_mapped_percent",
+        ],
         "slug": "mapped_reads_percent_downsampled",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "STAR (downsampled)_mqc-generalstats-star_downsampled-uniquely_mapped",
+        "name": [
+            "STAR (downsampled)_mqc-generalstats-star_downsampled-uniquely_mapped",
+            "star_downsampled-uniquely_mapped",
+        ],
         "slug": "mapped_reads_downsampled",
         "type": "Int64",
         "agg_func": "sum",
+        "scaling_factor": {"star_downsampled-uniquely_mapped": 1e6},
     },
 ]
 
 GENERAL_QUANTIFICATION_MAP = [
     {
-        "name": "featureCounts_mqc-generalstats-featurecounts-percent_assigned",
+        "name": [
+            "featureCounts_mqc-generalstats-featurecounts-percent_assigned",
+            "featurecounts-percent_assigned",
+        ],
         "slug": "fc_assigned_reads_percent",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "featureCounts_mqc-generalstats-featurecounts-Assigned",
+        "name": [
+            "featureCounts_mqc-generalstats-featurecounts-Assigned",
+            "featurecounts-Assigned",
+        ],
         "slug": "fc_assigned_reads",
         "type": "Int64",
         "agg_func": "sum",
+        "scaling_factor": {"featurecounts-Assigned": 1e6},
     },
     {
-        "name": "STAR quantification_mqc-generalstats-star_quantification-of_assigned_reads",
+        "name": [
+            "STAR quantification_mqc-generalstats-star_quantification-of_assigned_reads",
+            "custom_content-of_assigned_reads",
+        ],
         "slug": "star_assigned_reads_percent",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "STAR quantification_mqc-generalstats-star_quantification-Assigned_reads",
+        "name": [
+            "STAR quantification_mqc-generalstats-star_quantification-Assigned_reads",
+            "custom_content-Assigned_reads",
+        ],
         "slug": "star_assigned_reads",
         "type": "Int64",
         "agg_func": "sum",
     },
     {
-        "name": "Salmon_mqc-generalstats-salmon-percent_mapped",
+        "name": [
+            "Salmon_mqc-generalstats-salmon-percent_mapped",
+            "salmon-percent_mapped",
+        ],
         "slug": "salmon_assigned_reads_percent",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "Salmon_mqc-generalstats-salmon-num_mapped",
+        "name": ["Salmon_mqc-generalstats-salmon-num_mapped", "salmon-num_mapped"],
         "slug": "salmon_assigned_reads",
         "type": "Int64",
         "agg_func": "sum",
+        "scaling_factor": {"salmon-num_mapped": 1e6},
     },
 ]
 
 GENERAL_QC_MAP = [
     {
-        "name": "QoRTs_mqc-generalstats-qorts-Genes_PercentWithNonzeroCounts",
+        "name": [
+            "QoRTs_mqc-generalstats-qorts-Genes_PercentWithNonzeroCounts",
+            "qorts-Genes_PercentWithNonzeroCounts",
+        ],
         "slug": "nonzero_count_features_percent",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
-        "name": "QoRTs_mqc-generalstats-qorts-NumberOfChromosomesCovered",
+        "name": [
+            "QoRTs_mqc-generalstats-qorts-NumberOfChromosomesCovered",
+            "qorts-NumberOfChromosomesCovered",
+        ],
         "slug": "contigs_covered",
         "type": "Int64",
         "agg_func": "mean",
@@ -177,7 +259,7 @@ GENERAL_QC_MAP = [
     {
         "name": "RNA-SeQC_mqc-generalstats-rna_seqc-Expression_Profiling_Efficiency",
         "slug": "profiling_efficiency",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
@@ -909,13 +991,13 @@ QORTS_SUMMARY_MAP = [
     {
         "name": "StrandTest_frFirstStrand",
         "slug": "first_strand",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
     {
         "name": "StrandTest_frSecondStrand",
         "slug": "second_strand",
-        "type": "float64",
+        "type": "Float64",
         "agg_func": "mean",
     },
 ]

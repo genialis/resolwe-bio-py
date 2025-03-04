@@ -13,6 +13,7 @@ QCTables
 """
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Callable, Optional
 
 import pandas as pd
@@ -40,18 +41,28 @@ from .qc_mappings import (
 
 
 def _filter_and_rename_columns(df, column_map):
-    """Filter and rename columns based on provided specifications."""
-    valid_columns = [
-        col.get("name", "") for col in column_map if col.get("name", "") in df.columns
-    ]
-    df = df[valid_columns]
+    """Filter, apply a scaling factor and rename columns based on provided specifications."""
+    selected_columns = []
+    rename_map = {}
 
-    rename_map = {
-        col["name"]: col["slug"]
-        for col in column_map
-        if col.get("name", "") in df.columns
-    }
-    df = df.rename(columns=rename_map)
+    for col in column_map:
+        names = col.get("name", [])
+        slug = col.get("slug", "")
+        scaling_factor = col.get("scaling_factor", {})
+
+        if isinstance(names, str):
+            names = [names]
+
+        for name in names:
+            if name in df.columns:
+                selected_columns.append(name)
+                rename_map[name] = slug
+                # Some column values are given a specific format (e.g. millions)
+                # and need to be scaled on a common scale
+                df[name] = df[name] * scaling_factor.get(name, 1)
+                break
+
+    df = df[selected_columns].rename(columns=rename_map)
 
     return df
 
@@ -83,7 +94,7 @@ def general_multiqc_parser(file_object, name, column_map):
     and apply mean aggregation to the rows.
     """
 
-    df = pd.read_csv(file_object, sep="\t", index_col=0)
+    df = pd.read_csv(file_object, sep="\t", index_col=0).convert_dtypes()
 
     if column_map:
         df = _filter_and_rename_columns(df=df, column_map=column_map)
@@ -256,7 +267,7 @@ class QCTables(BaseTables):
     # e.g. samtools idxstats column names are based on contig names in the alignment index file.
     DATA_TYPES = {
         SAMPLE_INFO: {
-            "file": "multiqc_data/multiqc_sample_info-plot.txt",
+            "file": "multiqc_data/multiqc_sample_info.txt",
             "parser": general_multiqc_parser,
             "column_map": SAMPLE_INFO_MAP,
             "groups": [
@@ -314,13 +325,13 @@ class QCTables(BaseTables):
             "groups": [CHIPSEQ_GROUP, CUTNRUN_GROUP, ATACSEQ_GROUP],
         },
         MACS_PREPEAK: {
-            "file": "multiqc_data/multiqc_chip_seq_prepeak_qc-plot.txt",
+            "file": "multiqc_data/multiqc_chip_seq_prepeak_qc.txt",
             "parser": macs_prepeak_parser,
             "column_map": MACS_PREPEAK_MAP,
             "groups": [CHIPSEQ_GROUP, CUTNRUN_GROUP, ATACSEQ_GROUP],
         },
         MACS_POSTPEAK: {
-            "file": "multiqc_data/multiqc_chip_seq_postpeak_qc-plot.txt",
+            "file": "multiqc_data/multiqc_chip_seq_postpeak_qc.txt",
             "parser": general_multiqc_parser,
             "column_map": MACS_POSTPEAK_MAP,
             "groups": [CHIPSEQ_GROUP, CUTNRUN_GROUP, ATACSEQ_GROUP],
@@ -374,7 +385,7 @@ class QCTables(BaseTables):
             "groups": [],
         },
         QORTS_GENEBODY: {
-            "file": "multiqc_data/multiqc_genebody_qc-plot.txt",
+            "file": "multiqc_data/multiqc_genebody_qc.txt",
             "parser": qorts_genebody_parser,
             "column_map": [],
             "groups": [],
@@ -434,9 +445,20 @@ class QCTables(BaseTables):
 
     def _get_data_uri(self, data: Data, data_type: str) -> str:
         """Get the file path based on data type."""
-        if data_type in self.DATA_TYPES:
-            return f"{data.id}/{self.DATA_TYPES[data_type]['file']}"
-        raise ValueError(f"Unknown data type: {data_type}")
+        if data_type not in self.DATA_TYPES:
+            raise ValueError(f"Unknown data type: {data_type}")
+
+        files = data.files(field_name="report_data")
+        target_fn = self.DATA_TYPES[data_type]["file"]
+
+        if target_fn not in files:
+            # Some MultiQC versions returned the same file with the ``-plot`` suffix
+            suffix = Path(target_fn).suffix
+            target_fn2 = target_fn.replace(suffix, f"-plot{suffix}")
+            if target_fn2 in files:
+                return f"{data.id}/{target_fn2}"
+
+        return f"{data.id}/{target_fn}"
 
     @lru_cache()
     def _fetch_group(self, group_name: str) -> pd.DataFrame:
@@ -448,6 +470,26 @@ class QCTables(BaseTables):
         ]
         data = [self._load_fetch(data_type) for data_type in data_types]
         df = pd.concat(data, axis=1)
+        return df
+
+    @lru_cache()
+    def _load_fetch(self, data_type):
+        df = super()._load_fetch(data_type)
+        if data_type == self.META:
+            return df
+        df = df.convert_dtypes()
+
+        column_mappings = self.DATA_TYPES[data_type]["column_map"]
+        column_types = {
+            c["slug"]: c["type"] for c in column_mappings if c["slug"] in df.columns
+        }
+
+        for col, dtype in column_types.items():
+            # Ensure that these numbers are round to nearest integer
+            if "int" in dtype.lower():
+                df[col] = df[col].round().astype(dtype)
+            else:
+                df[col] = df[col].astype(dtype)
 
         return df
 
@@ -460,8 +502,7 @@ class QCTables(BaseTables):
             if name in self.data_groups:
                 return self._fetch_group(group_name=name)
             elif name in self.DATA_TYPES:
-                cached_load_fetch = lru_cache(self._load_fetch)
-                return cached_load_fetch(name)
+                return self._load_fetch(name)
             else:
                 raise AttributeError(
                     f"'{self.__class__.__name__}' object has no attribute '{name}'. "
