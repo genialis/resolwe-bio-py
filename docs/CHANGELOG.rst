@@ -34,6 +34,8 @@ Fixed
 Changed
 -------
 - Change ``_resource_setter`` to work with list of resources
+- Fix ``QCTables`` class to work with the new version of MultiQC
+  and ensure that legacy reports are still supported
 
 
 ===================

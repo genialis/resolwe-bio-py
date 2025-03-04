@@ -13,6 +13,7 @@ QCTables
 """
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Callable, Optional
 
 import pandas as pd
@@ -41,17 +42,22 @@ from .qc_mappings import (
 
 def _filter_and_rename_columns(df, column_map):
     """Filter and rename columns based on provided specifications."""
-    valid_columns = [
-        col.get("name", "") for col in column_map if col.get("name", "") in df.columns
-    ]
-    df = df[valid_columns]
+    selected_columns = []
+    rename_map = {}
 
-    rename_map = {
-        col["name"]: col["slug"]
-        for col in column_map
-        if col.get("name", "") in df.columns
-    }
-    df = df.rename(columns=rename_map)
+    for col in column_map:
+        names = col.get("name", [])
+        slug = col.get("slug", "")
+
+        if isinstance(names, str):
+            names = [names]
+
+        for name in names:
+            if name in df.columns:
+                selected_columns.append(name)
+                rename_map[name] = slug
+
+    df = df[selected_columns].rename(columns=rename_map)
 
     return df
 
@@ -256,7 +262,7 @@ class QCTables(BaseTables):
     # e.g. samtools idxstats column names are based on contig names in the alignment index file.
     DATA_TYPES = {
         SAMPLE_INFO: {
-            "file": "multiqc_data/multiqc_sample_info-plot.txt",
+            "file": "multiqc_data/multiqc_sample_info.txt",
             "parser": general_multiqc_parser,
             "column_map": SAMPLE_INFO_MAP,
             "groups": [
@@ -314,13 +320,13 @@ class QCTables(BaseTables):
             "groups": [CHIPSEQ_GROUP, CUTNRUN_GROUP, ATACSEQ_GROUP],
         },
         MACS_PREPEAK: {
-            "file": "multiqc_data/multiqc_chip_seq_prepeak_qc-plot.txt",
+            "file": "multiqc_data/multiqc_chip_seq_prepeak_qc.txt",
             "parser": macs_prepeak_parser,
             "column_map": MACS_PREPEAK_MAP,
             "groups": [CHIPSEQ_GROUP, CUTNRUN_GROUP, ATACSEQ_GROUP],
         },
         MACS_POSTPEAK: {
-            "file": "multiqc_data/multiqc_chip_seq_postpeak_qc-plot.txt",
+            "file": "multiqc_data/multiqc_chip_seq_postpeak_qc.txt",
             "parser": general_multiqc_parser,
             "column_map": MACS_POSTPEAK_MAP,
             "groups": [CHIPSEQ_GROUP, CUTNRUN_GROUP, ATACSEQ_GROUP],
@@ -374,7 +380,7 @@ class QCTables(BaseTables):
             "groups": [],
         },
         QORTS_GENEBODY: {
-            "file": "multiqc_data/multiqc_genebody_qc-plot.txt",
+            "file": "multiqc_data/multiqc_genebody_qc.txt",
             "parser": qorts_genebody_parser,
             "column_map": [],
             "groups": [],
@@ -435,7 +441,21 @@ class QCTables(BaseTables):
     def _get_data_uri(self, data: Data, data_type: str) -> str:
         """Get the file path based on data type."""
         if data_type in self.DATA_TYPES:
-            return f"{data.id}/{self.DATA_TYPES[data_type]['file']}"
+            files = data.files(field_name="report_data")
+            target_fn = self.DATA_TYPES[data_type]["file"]
+
+            if target_fn in files:
+                return f"{data.id}/{target_fn}"
+
+            # Some MultiQC versions returned the same file
+            # with the ``-plot`` suffix
+            file_suffix = Path(target_fn).suffix
+            plot_fn = target_fn.replace(file_suffix, f"-plot{file_suffix}")
+            if plot_fn in files:
+                return f"{data.id}/{plot_fn}"
+
+            return f"{data.id}/{target_fn}"
+
         raise ValueError(f"Unknown data type: {data_type}")
 
     @lru_cache()
