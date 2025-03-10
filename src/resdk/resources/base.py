@@ -49,6 +49,10 @@ class BaseResource:
         if model_data:
             self._update_fields(model_data)
 
+    def __hash__(self):
+        """Return hash of the object."""
+        return self.id or 0
+
     @classmethod
     def fetch_object(cls, resolwe, id=None, slug=None):
         """Return resource instance that is uniquely defined by identifier."""

@@ -22,6 +22,7 @@ Changed
 -------
 - Drop support for ``Python 3.8``
 - Propagate the option of showing the progress bar in the download method
+- Make ``BaseResource`` class hashable
 
 Fixed
 -----
