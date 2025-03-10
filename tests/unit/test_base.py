@@ -57,7 +57,8 @@ class TestBaseResolweResource(unittest.TestCase):
         base_resource.UPDATE_PROTECTED_FIELDS = ("update_protected",)
         base_resource.READ_ONLY_FIELDS = ("read_only",)
         self.assertEqual(
-            base_resource.fields(), ("read_only", "update_protected", "writable")
+            base_resource.get_resource_fields(),
+            ("read_only", "update_protected", "writable"),
         )
 
     def test_dehydrate_resources(self):
@@ -251,7 +252,7 @@ class TestAttributesDefined(unittest.TestCase):
 
         for class_ in classes:
             resource = class_(resolwe)
-            for field in resource.fields():
+            for field in resource.get_resource_fields():
                 # Some fields are properties that can only be accessed when
                 # object has id != None. Otherwise they return ValueError.
                 # We therefore skip these ValueError's

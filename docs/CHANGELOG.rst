@@ -17,11 +17,16 @@ Added
 - Add a resolwe method for fetching the server module versions
 - Add support for ``Python 3.13``
 - Add ``QCTables`` class to the ``tables`` module
+- Add ``cookies`` authentication method
+- Add ``PredictionPreset`` resource
 
 Changed
 -------
+- **BACKWARD INCOMPATIBLE:** Rename method ``fields`` on ``BaseResurce`` to
+  ``get_resource_fields``
 - Drop support for ``Python 3.8``
 - Propagate the option of showing the progress bar in the download method
+- Make ``BaseResource`` class hashable
 
 Fixed
 -----
