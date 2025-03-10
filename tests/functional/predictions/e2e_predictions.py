@@ -21,7 +21,7 @@ class TestPredictions(BaseResdkFunctionalTest):
         reads = self.res.run(
             slug="upload-fastq-single",
             input={"src": os.path.join(TEST_FILES_DIR, "reads.fastq.gz")},
-            collection=self.collection.id,
+            collection=self.collection,
         )
         sample = reads.sample
         self.assertEqual(sample.get_predictions(), {})

@@ -20,7 +20,7 @@ class TestMetadata(BaseResdkFunctionalTest):
         """Create an instance of Metadata and confirm it can be fetched."""
         metadata = self.res.metadata.create(
             name="Test name",
-            collection=self.collection.id,
+            collection=self.collection,
             df=pd.DataFrame({"Column 2": [40, 50]}, index=[10, 20]),
         )
 
