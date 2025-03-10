@@ -57,6 +57,7 @@ from .resources import (
     User,
 )
 from .resources.base import BaseResource
+from .resources.fields import DataSource
 from .resources.kb import Feature, Mapping
 from .resources.utils import get_collection_id, get_data_id, is_data, iterate_fields
 from .utils import md5
@@ -464,7 +465,7 @@ class Resolwe:
             data["process_resources"] = process_resources
 
         model_data = self.api.data.post(data)
-        return Data(resolwe=self, **model_data)
+        return Data(resolwe=self, **model_data, initial_data_source=DataSource.SERVER)
 
     def get_or_run(self, slug=None, input={}):
         """Return existing object if found, otherwise create new one.
@@ -607,6 +608,7 @@ class ResAuth(requests.auth.AuthBase):
         password: Optional[str] = None,
         url: str = DEFAULT_URL,
         interactive: bool = False,
+        cookies: Optional[AuthCookie] = None,
     ):
         """Authenticate user on Resolwe server."""
         self.logger = logging.getLogger(__name__)

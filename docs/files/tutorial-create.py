@@ -60,7 +60,7 @@ annotations = {
     "general.species": "Homo sapiens", "general.description": "Description"
 }
 reads.sample.set_annotations(annotations)
-reads.sample.set_annotation("general.description", None, force=True)
+reads.sample.set_annotation("general.description", None)
 
 
 

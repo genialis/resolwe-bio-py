@@ -4,7 +4,7 @@ from time import sleep, time
 
 import pandas as pd
 import pytz
-from mock import MagicMock, patch
+from mock import MagicMock, NonCallableMagicMock, patch
 from pandas.testing import assert_frame_equal
 
 from resdk.resources import AnnotationField, AnnotationValue
@@ -16,17 +16,12 @@ class TestTables(unittest.TestCase):
         self.resolwe = MagicMock()
         self.resolwe.url = "https://server.com"
 
-        self.sample = MagicMock()
+        self.sample = NonCallableMagicMock()
         self.sample.id = 123
         self.sample.name = "Sample123"
         self.sample.modified = datetime(
             2020, 11, 1, 12, 15, 0, 0, tzinfo=pytz.UTC
         ).astimezone(pytz.timezone("Europe/Ljubljana"))
-        self.av1 = AnnotationValue(
-            resolwe=self.resolwe,
-            value=1,
-            entity=123,
-        )
         self.af1 = AnnotationField(
             id=1,
             resolwe=self.resolwe,
@@ -34,7 +29,12 @@ class TestTables(unittest.TestCase):
             group=dict(name="general"),
             type="DECIMAL",
         )
-        self.av1._field = self.af1
+        self.av1 = AnnotationValue(
+            resolwe=self.resolwe,
+            value=1,
+            entity=self.sample,
+            field=self.af1,
+        )
         self.resolwe.annotation_value.filter.return_value = [
             self.av1,
         ]

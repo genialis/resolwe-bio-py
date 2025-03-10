@@ -63,40 +63,19 @@ class TestSample(unittest.TestCase):
         self.assertEqual(sample._data, None)
 
         # raising error if sample is not saved
-        sample.id = None
+        sample._id = None
         with self.assertRaises(ValueError):
-            _ = sample.data
+            sample.data
 
     def test_set_annotation(self):
         resolwe = MagicMock()
-        # Set annotation value for existing annotation field.
-        with patch("resdk.resources.sample.Sample.annotations") as mock_annotations:
-            sample = Sample(id=1, resolwe=resolwe)
-            full_path = "general.species"
-            post_mock = MagicMock()
-            sample.api = MagicMock(return_value=post_mock)
-            annotation_value = MagicMock(spec=AnnotationValue)
-            mock_annotations.get.return_value = annotation_value
-            sample.set_annotation(full_path, "Mus musculus")
-            sample.annotations.get.assert_called_with(
-                field__name="species", field__group__name="general"
-            )
-            self.assertEqual(annotation_value.value, "Mus musculus")
-            annotation_value.save.asssert_called_once()
-
-        # Delete annotation value.
-        with patch("resdk.resources.sample.Sample.annotations") as mock_annotations:
-            sample = Sample(id=1, resolwe=resolwe)
-            full_path = "general.species"
-            post_mock = MagicMock()
-            sample.api = MagicMock(return_value=post_mock)
-            annotation_value = MagicMock(spec=AnnotationValue)
-            mock_annotations.get.return_value = annotation_value
-            sample.set_annotation(full_path, None)
-            sample.annotations.get.assert_called_with(
-                field__name="species", field__group__name="general"
-            )
-            annotation_value.delete.asssert_called_once()
+        sample = Sample(id=1, resolwe=resolwe)
+        full_path = "general.species"
+        value_mock = MagicMock(spec=AnnotationValue)
+        resolwe.annotation_value.create.side_effect = value_mock
+        sample.set_annotation(full_path, "Mus musculus")
+        value_mock.assert_called_once()
+        self.assertEqual(value_mock.call_args[1]["value"], "Mus musculus")
 
         # Nonexisting field.
         resolwe.annotation_field.from_path.side_effect = LookupError

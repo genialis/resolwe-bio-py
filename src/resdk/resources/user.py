@@ -2,6 +2,7 @@
 
 from ..utils.decorators import assert_object_exists
 from .base import BaseResource
+from .fields import FieldAccessType, StringField
 from .utils import get_user_id
 
 
@@ -19,44 +20,19 @@ class User(BaseResource):
 
     endpoint = "user"
 
-    WRITABLE_FIELDS = (
-        "company",
-        "department",
-        "first_name",
-        "job_title",
-        "lab",
-        "last_name",
-        "location",
-        "phone_number",
-    )
-    UPDATE_PROTECTED_FIELDS = (
-        "username",
-        "email",
-    )
+    company = StringField(access_type=FieldAccessType.WRITABLE)
+    department = StringField(access_type=FieldAccessType.WRITABLE)
+    first_name = StringField(access_type=FieldAccessType.WRITABLE)
+    job_title = StringField(access_type=FieldAccessType.WRITABLE)
+    lab = StringField(access_type=FieldAccessType.WRITABLE)
+    last_name = StringField(access_type=FieldAccessType.WRITABLE)
+    location = StringField(access_type=FieldAccessType.WRITABLE)
+    phone_number = StringField(access_type=FieldAccessType.WRITABLE)
+    email = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    username = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
 
     def __init__(self, resolwe=None, **model_data):
         """Initialize attributes."""
-        #: user's first name
-        self.first_name = None
-        # user's last name
-        self.last_name = None
-        # user's job title
-        self.job_title = None
-        # user's company
-        self.company = None
-        # user's department
-        self.department = None
-        # user's location
-        self.location = None
-        # user's lab
-        self.lab = None
-        # user's phone number
-        self.phone_number = None
-        # user's email
-        self.email = None
-        # user's username
-        self.username = None
-
         super().__init__(resolwe, **model_data)
 
     def get_name(self):
@@ -93,13 +69,10 @@ class Group(BaseResource):
     #: (lazy loaded) list of users in Group
     _users = None
 
-    WRITABLE_FIELDS = ("name",)
+    name = StringField(access_type=FieldAccessType.WRITABLE)
 
     def __init__(self, resolwe=None, **model_data):
         """Initialize attributes."""
-        #: group's name
-        self.name = None
-
         super().__init__(resolwe, **model_data)
 
     def update(self):

@@ -3,6 +3,14 @@
 import logging
 
 from .base import BaseResolweResource
+from .fields import (
+    BaseField,
+    BooleanField,
+    DictField,
+    DictResourceField,
+    FieldAccessType,
+    StringField,
+)
 from .utils import _print_input_line
 
 
@@ -16,23 +24,26 @@ class Process(BaseResolweResource):
     """
 
     endpoint = "process"
-    READ_ONLY_FIELDS = BaseResolweResource.READ_ONLY_FIELDS + ("is_active",)
-    UPDATE_PROTECTED_FIELDS = BaseResolweResource.UPDATE_PROTECTED_FIELDS + (
-        "category",
-        "data_name",
-        "description",
-        "entity_always_create",
-        "entity_descriptor_schema",
-        "entity_input",
-        "entity_type",
-        "input_schema",
-        "output_schema",
-        "persistence",
-        "requirements",
-        "run",
-        "scheduling_class",
-        "type",
+
+    is_active = BooleanField()
+    category = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    data_name = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    description = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    entity_always_create = BooleanField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    entity_descriptor_schema = DictResourceField(
+        resource_class_name="DescriptorSchema",
+        property_name="slug",
+        access_type=FieldAccessType.UPDATE_PROTECTED,
     )
+    entity_input = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    entity_type = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    input_schema = BaseField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    output_schema = BaseField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    persistence = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    requirements = DictField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    run = DictField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    scheduling_class = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    type = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
 
     all_permissions = ["none", "view", "share", "owner"]
 
@@ -40,26 +51,14 @@ class Process(BaseResolweResource):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
 
-        self.data_name = None
+        # self.data_name = None
         """
         the default name of data object using this process. When data object
         is created you can assign a name to it. But if you don't, the name of
         data object is determined from this field. The field is a expression
         which can take values of other fields.
         """
-        #: the type of process ``"type:sub_type:sub_sub_type:..."``
-        self.type = None
-        #: entity_always_create
-        self.entity_always_create = None
-        #: entity_descriptor_schema
-        self.entity_descriptor_schema = None
-        #: entity_input
-        self.entity_input = None
-        #: entity_type
-        self.entity_type = None
-        #: used to group processes in a GUI. Examples: ``upload:``, ``analyses:variants:``, ...
-        self.category = None
-        self.persistence = None
+
         """
         Measure of how important is to keep the process outputs when
         optimizing disk usage. Options: RAW/CACHED/TEMP. For processes, used
@@ -69,22 +68,6 @@ class Process(BaseResolweResource):
         analysis use CACHED - the results can stil be calculated from
         imported data but it can take time.
         """
-        #: process priority - not used yet
-        self.priority = None
-        #: process description
-        self.description = None
-        #: specifications of inputs
-        self.input_schema = None
-        #: specification of outputs
-        self.output_schema = None
-        #: the heart of process - here the algorithm is defined.
-        self.run = None
-        #: required Docker image, amount of memory / CPU ...
-        self.requirements = None
-        #: Scheduling class
-        self.scheduling_class = None
-        #: Boolean stating wether process is active
-        self.is_active = None
 
         super().__init__(resolwe, **model_data)
 

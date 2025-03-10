@@ -9,6 +9,7 @@ from mock import MagicMock, patch
 from resdk.resources.collection import BaseCollection, Collection
 from resdk.resources.data import Data
 from resdk.resources.descriptor import DescriptorSchema
+from resdk.resources.fields import FieldStatus
 from resdk.resources.process import Process
 
 DATA0 = MagicMock(**{"files.return_value": [], "id": 0})
@@ -27,13 +28,30 @@ class TestBaseCollection(unittest.TestCase):
 
         collection = Collection(resolwe=resolwe, id=1)
         collection._data = [data1]
+        collection._data_status = FieldStatus.SET
 
         types = collection.data_types()
         self.assertEqual(types, ["data:reads:fastq:single:"])
 
+        # Test id must be int.
+        with self.assertRaisesRegex(ValueError, "Type of 'Data.id' must be 'int'."):
+            Data(resolwe=resolwe, id="1")
+
+        # Test tags is array of strings.
+        with self.assertRaisesRegex(ValueError, "Type of 'Data.tags' must be list."):
+            Data(resolwe=resolwe, tags=123)
+
+        # Test tags is array of strings.
+        with self.assertRaisesRegex(
+            ValueError, "Type of 'Data.tags' must be a list of 'str'."
+        ):
+            Data(resolwe=resolwe, tags=["first", 123])
+        Data(resolwe=resolwe, tags=["first", "second"])
+
     def test_files(self):
         collection = Collection(resolwe=MagicMock(), id=1)
         collection._data = [DATA1, DATA2]
+        collection._data_status = FieldStatus.SET
 
         files = collection.files()
         self.assertCountEqual(files, ["arch.gz", "reads.fq", "outfile.exp"])
@@ -112,10 +130,10 @@ class TestCollection(unittest.TestCase):
         collection.update()
         self.assertEqual(collection._data, None)
 
-        # raising error if collection is not saved
-        collection.id = None
+        # raising error if collection is not saved.
+        collection._id = None
         with self.assertRaises(ValueError):
-            _ = collection.data
+            collection.data
 
     def test_samples(self):
         collection = Collection(id=1, resolwe=MagicMock())
@@ -132,9 +150,9 @@ class TestCollection(unittest.TestCase):
         self.assertEqual(collection._samples, None)
 
         # raising error if data collection is not saved
-        collection.id = None
+        collection._id = None
         with self.assertRaises(ValueError):
-            _ = collection.samples
+            collection.samples
 
     def test_relations(self):
         collection = Collection(id=1, resolwe=MagicMock())
@@ -151,9 +169,9 @@ class TestCollection(unittest.TestCase):
         self.assertEqual(collection._relations, None)
 
         # raising error if data collection is not saved
-        collection.id = None
+        collection._id = None
         with self.assertRaises(ValueError):
-            _ = collection.relations
+            collection.relations
 
 
 if __name__ == "__main__":

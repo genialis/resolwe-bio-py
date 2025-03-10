@@ -8,13 +8,13 @@ from mock import MagicMock, patch
 
 from resdk.resources.data import Data
 from resdk.resources.descriptor import DescriptorSchema
+from resdk.resources.fields import FieldStatus
 from resdk.resources.process import Process
 
 
 class TestData(unittest.TestCase):
     def test_sample(self):
-        data = Data(resolwe=MagicMock(), id=1)
-        data._original_values = {"entity": {"id": 5, "name": "XYZ"}}
+        data = Data(resolwe=MagicMock(), id=1, entity={"id": 5, "name": "XYZ"})
 
         self.assertEqual(data.sample.id, 5)
         self.assertEqual(data.sample.name, "XYZ")
@@ -63,7 +63,7 @@ class TestData(unittest.TestCase):
 
     def test_parents(self):
         # Data with no id should fail.
-        data = Data(id=None, resolwe=MagicMock())
+        data = Data(resolwe=MagicMock())
         with self.assertRaisesRegex(ValueError, "Instance must be saved *"):
             data.parents
 
@@ -77,7 +77,7 @@ class TestData(unittest.TestCase):
 
     def test_children(self):
         # Data with no id should fail.
-        data = Data(id=None, resolwe=MagicMock())
+        data = Data(resolwe=MagicMock())
         with self.assertRaisesRegex(ValueError, "Instance must be saved *"):
             data.children
 
@@ -96,14 +96,16 @@ class TestData(unittest.TestCase):
             side_effect=[["first_dir/file1.txt"], ["fastq_dir/file2.txt"]]
         )
 
-        data.output = {
+        data._output_status = FieldStatus.SET
+        data._output = {
             "list": [{"file": "element.gz"}],
             "dir_list": [{"dir": "first_dir"}],
             "fastq": {"file": "file.fastq.gz"},
             "fastq_archive": {"file": "archive.gz"},
             "fastq_dir": {"dir": "fastq_dir"},
         }
-        data.process = Process(
+        data._process_status = FieldStatus.SET
+        data._process = Process(
             resolwe=resolwe,
             output_schema=[
                 {"name": "list", "label": "List", "type": "list:basic:file:"},
@@ -134,7 +136,8 @@ class TestData(unittest.TestCase):
         file_list = data.files(field_name="output.fastq")
         self.assertEqual(file_list, ["file.fastq.gz"])
 
-        data.output = {
+        data._output_status = FieldStatus.SET
+        data._output = {
             "list": [{"no_file_field_here": "element.gz"}],
         }
         data.process.output_schema = [
@@ -143,7 +146,7 @@ class TestData(unittest.TestCase):
         with self.assertRaisesRegex(KeyError, "does not contain 'file' key."):
             data.files()
 
-        data = Data(resolwe=MagicMock(), id=None)
+        data = Data(resolwe=MagicMock())
         with self.assertRaisesRegex(ValueError, "must be saved before"):
             data.files()
 

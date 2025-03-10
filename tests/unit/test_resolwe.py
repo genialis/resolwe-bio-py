@@ -320,7 +320,6 @@ class TestRun(unittest.TestCase):
     @patch("resdk.resolwe.Resolwe", spec=True)
     def test_dehydrate_data(self, resolwe_mock):
         data_obj = Data(id=1, resolwe=MagicMock())
-        data_obj.id = 1  # this is overriden when initialized
         process = self.process_mock
 
         result = Resolwe._process_inputs(resolwe_mock, {"genome": data_obj}, process)

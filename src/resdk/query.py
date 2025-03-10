@@ -13,11 +13,15 @@ import collections
 import copy
 import logging
 import operator
+from typing import TYPE_CHECKING
 
 import tqdm
-
-from resdk.resources import AnnotationField, DescriptorSchema, PredictionField, Process
+from resdk.resources import DescriptorSchema, Process
 from resdk.resources.base import BaseResource
+from resdk.resources.fields import DataSource
+
+if TYPE_CHECKING:
+    from resdk.resources import AnnotationField, PredictionField
 
 
 class ResolweQuery:
@@ -201,7 +205,9 @@ class ResolweQuery:
 
     def _populate_resource(self, data):
         """Populate resource with given data."""
-        return self.resource(resolwe=self.resolwe, **data)
+        return self.resource(
+            resolwe=self.resolwe, **data, initial_data_source=DataSource.SERVER
+        )
 
     def _fetch(self):
         """Make request to the server and populate cache."""
@@ -301,7 +307,6 @@ class ResolweQuery:
         """Return new instance of current resource."""
         resource = self.resource(self.resolwe, **model_data)
         resource.save()
-
         return resource
 
     def filter(self, **filters):
