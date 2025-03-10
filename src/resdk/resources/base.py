@@ -66,7 +66,7 @@ class BaseResource:
             return query.get(id=id)
         return query.get(slug=slug)
 
-    def fields(self):
+    def get_resource_fields(self):
         """Resource fields."""
         return (
             self.READ_ONLY_FIELDS + self.UPDATE_PROTECTED_FIELDS + self.WRITABLE_FIELDS
@@ -75,7 +75,7 @@ class BaseResource:
     def _update_fields(self, payload):
         """Update fields of the local resource based on the server values."""
         self._original_values = copy.deepcopy(payload)
-        for field_name in self.fields():
+        for field_name in self.get_resource_fields():
             setattr(self, field_name, payload.get(field_name, None))
 
     def update(self):

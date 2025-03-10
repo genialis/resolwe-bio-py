@@ -21,6 +21,8 @@ Added
 
 Changed
 -------
+- **BACKWARD INCOMPATIBLE:** Rename method ``fields`` on ``BaseResurce`` to
+  ``get_resource_fields``
 - Drop support for ``Python 3.8``
 - Propagate the option of showing the progress bar in the download method
 - Make ``BaseResource`` class hashable
