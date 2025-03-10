@@ -22,6 +22,8 @@ from resdk.resources.utils import (
     parse_resolwe_datetime,
 )
 
+from .utils import server_resource
+
 PROCESS_OUTPUT_SCHEMA = [
     {"name": "fastq", "type": "basic:file:", "label": "Reads file"},
     {"name": "bases", "type": "basic:string:", "label": "Number of bases"},
@@ -218,36 +220,31 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(print_mock.mock_calls, calls)
 
     def test_get_collection_id(self):
-        collection = Collection(id=1, resolwe=MagicMock())
-        collection.id = 1  # this is overriden when initialized
+        collection = server_resource(Collection, id=1, resolwe=MagicMock())
         self.assertEqual(get_collection_id(collection), 1)
 
         self.assertEqual(get_collection_id(2), 2)
 
     def test_get_sample_id(self):
-        sample = Sample(id=1, resolwe=MagicMock())
-        sample.id = 1  # this is overriden when initialized
+        sample = server_resource(Sample, id=1, resolwe=MagicMock())
         self.assertEqual(get_sample_id(sample), 1)
 
         self.assertEqual(get_sample_id(2), 2)
 
     def test_get_data_id(self):
-        data = Data(id=1, resolwe=MagicMock())
-        data.id = 1  # this is overriden when initialized
+        data = server_resource(Data, id=1, resolwe=MagicMock())
         self.assertEqual(get_data_id(data), 1)
 
         self.assertEqual(get_data_id(2), 2)
 
     def test_get_process_id(self):
-        process = Process(id=1, resolwe=MagicMock())
-        process.id = 1  # this is overriden when initialized
+        process = server_resource(Process, id=1, resolwe=MagicMock())
         self.assertEqual(get_process_id(process), 1)
 
         self.assertEqual(get_process_id(2), 2)
 
     def test_get_relation_id(self):
-        relation = Relation(id=1, resolwe=MagicMock())
-        relation.id = 1  # this is overriden when initialized
+        relation = server_resource(Relation, id=1, collection=None, resolwe=MagicMock())
         self.assertEqual(get_relation_id(relation), 1)
 
         self.assertEqual(get_relation_id(2), 2)

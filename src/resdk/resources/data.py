@@ -11,11 +11,17 @@ from resdk.constants import CHUNK_SIZE
 from ..utils.decorators import assert_object_exists
 from .background_task import BackgroundTask
 from .base import BaseResolweResource
-from .collection import Collection
-from .descriptor import DescriptorSchema
-from .process import Process
-from .sample import Sample
-from .utils import flatten_field, parse_resolwe_datetime
+from .fields import (
+    BooleanField,
+    DataSource,
+    DateTimeField,
+    DictField,
+    DictResourceField,
+    FieldAccessType,
+    IntegerField,
+    StringField,
+)
+from .utils import flatten_field
 
 
 class Data(BaseResolweResource):
@@ -30,85 +36,56 @@ class Data(BaseResolweResource):
     endpoint = "data"
     full_search_paramater = "text"
 
-    READ_ONLY_FIELDS = BaseResolweResource.READ_ONLY_FIELDS + (
-        "checksum",
-        "descriptor_dirty",
-        "duplicated",
-        "process_cores",
-        "process_error",
-        "process_info",
-        "process_memory",
-        "process_progress",
-        "process_rc",
-        "process_warning",
-        "output",
-        "scheduled",
-        "size",
-        "status",
+    checksum = StringField(access_type=FieldAccessType.READ_ONLY)
+    descriptor_dirty = BooleanField(access_type=FieldAccessType.READ_ONLY)
+    duplicated = DateTimeField(access_type=FieldAccessType.READ_ONLY)
+    process_cores = IntegerField(access_type=FieldAccessType.READ_ONLY)
+    process_error = StringField(access_type=FieldAccessType.READ_ONLY, many=True)
+    process_info = StringField(access_type=FieldAccessType.READ_ONLY, many=True)
+    process_memory = IntegerField(access_type=FieldAccessType.READ_ONLY)
+    process_progress = IntegerField(access_type=FieldAccessType.READ_ONLY)
+    process_rc = IntegerField(access_type=FieldAccessType.READ_ONLY)
+    process_warning = StringField(access_type=FieldAccessType.READ_ONLY, many=True)
+    output = DictField(access_type=FieldAccessType.READ_ONLY)
+    scheduled = DateTimeField(access_type=FieldAccessType.READ_ONLY)
+    size = IntegerField(access_type=FieldAccessType.READ_ONLY)
+    status = StringField(access_type=FieldAccessType.READ_ONLY)
+
+    input = DictField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    process = DictResourceField(
+        resource_class_name="Process",
+        property_name="slug",
+        access_type=FieldAccessType.UPDATE_PROTECTED,
     )
-    UPDATE_PROTECTED_FIELDS = BaseResolweResource.UPDATE_PROTECTED_FIELDS + (
-        "input",
-        "process",
+    collection = DictResourceField(
+        resource_class_name="Collection", access_type=FieldAccessType.WRITABLE
     )
-    WRITABLE_FIELDS = BaseResolweResource.WRITABLE_FIELDS + (
-        "collection",
-        "descriptor",
-        "descriptor_schema",
-        "process_resources",
-        "sample",
-        "tags",
+    descriptor = DictField(access_type=FieldAccessType.WRITABLE)
+    descriptor_schema = DictResourceField(
+        resource_class_name="DescriptorSchema",
+        property_name="slug",
+        access_type=FieldAccessType.WRITABLE,
     )
+    process_resources = DictField(access_type=FieldAccessType.WRITABLE)
+
+    sample = DictResourceField(
+        resource_class_name="Sample",
+        server_field_name="entity",
+        access_type=FieldAccessType.WRITABLE,
+    )
+    tags = StringField(access_type=FieldAccessType.WRITABLE, many=True)
+    started = DateTimeField(access_type=FieldAccessType.READ_ONLY)
+    finished = DateTimeField(access_type=FieldAccessType.READ_ONLY)
 
     def __init__(self, resolwe, **model_data):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
-
-        #: ``Collection``s that contains ``Data``
-        self._collection = None
-        #: ``DescriptorSchema`` of ``Data`` object
-        self._descriptor_schema = None
-        #: The process used in this data object
-        self._process = None
-        #: ``Sample`` containing ``Data`` object
-        self._sample = None
 
         #: ``ResolweQuery`` containing parent ``Data`` objects (lazy loaded)
         self._parents = None
         #: ``ResolweQuery`` containing child ``Data`` objects (lazy loaded)
         self._children = None
 
-        #: checksum field calculated on inputs
-        self.checksum = None
-        #: indicate whether `descriptor` doesn't match `descriptor_schema` (is dirty)
-        self.descriptor_dirty = None
-        #: annotation data, with the form defined in descriptor_schema
-        self.descriptor = None
-        #: duplicated
-        self.duplicated = None
-        #: actual input values
-        self.input = None
-        #: process cores
-        self.process_cores = None
-        #: error log message (list of strings)
-        self.process_error = None
-        #: info log message (list of strings)
-        self.process_info = None
-        #: process memory
-        self.process_memory = None
-        #: process progress in percentage
-        self.process_progress = None
-        #: Process algorithm return code
-        self.process_rc = None
-        #: warning log message (list of strings)
-        self.process_warning = None
-        #: actual output values
-        self.output = None
-        #: process_resources
-        self.process_resources = None
-        #: size
-        self.size = None
-        #: scheduled
-        self.scheduled = None
         #: process status - Possible values:
         #: UP (Uploading - for upload processes),
         #: RE (Resolving - computing input data objects)
@@ -118,80 +95,20 @@ class Data(BaseResolweResource):
         #: OK (Done)
         #: ER (Error)
         #: DR (Dirty - Data is dirty)
-        self.status = None
-        #: data object's tags
-        self.tags = None
 
         super().__init__(resolwe, **model_data)
 
-    def update(self):
-        """Clear cache and update resource fields from the server."""
+    def _update_fields(self, payload, data_source):
+        """Update fields of the local resource based on the server values."""
+        # The payload contains collection information and sample information on the top
+        # level. The collection also contains the sample information, but only as id.
+        # Replace the id with the actual info.
+        if collection_payload := payload.get("collection"):
+            if sample_payload := payload.get("entity"):
+                sample_payload["collection"] = collection_payload
         self._children = None
-        self._collection = None
-        self._descriptor_schema = None
         self._parents = None
-        self._process = None
-        self._sample = None
-
-        super().update()
-
-    @property
-    def process(self):
-        """Get process."""
-        return self._process
-
-    @process.setter
-    def process(self, payload):
-        """Set process."""
-        self._resource_setter(payload, Process, "_process")
-
-    @property
-    def descriptor_schema(self):
-        """Get descriptor schema."""
-        return self._descriptor_schema
-
-    @descriptor_schema.setter
-    def descriptor_schema(self, payload):
-        """Set descriptor schema."""
-        self._resource_setter(payload, DescriptorSchema, "_descriptor_schema")
-
-    @property
-    def sample(self):
-        """Get sample."""
-        if self._sample is None and self._original_values.get("entity", None):
-            # The collection data is only serialized on the top level. Replace the
-            # data inside 'entity' with the actual collection data.
-            entity_values = self._original_values["entity"].copy()
-            entity_values["collection"] = self._original_values.get("collection", None)
-            self._sample = Sample(resolwe=self.resolwe, **entity_values)
-        return self._sample
-
-    @sample.setter
-    def sample(self, payload):
-        """Set sample."""
-        self._resource_setter(payload, Sample, "_sample")
-
-    @property
-    def collection(self):
-        """Get collection."""
-        return self._collection
-
-    @collection.setter
-    def collection(self, payload):
-        """Set collection."""
-        self._resource_setter(payload, Collection, "_collection")
-
-    @property
-    @assert_object_exists
-    def started(self):
-        """Get start time."""
-        return parse_resolwe_datetime(self._original_values["started"])
-
-    @property
-    @assert_object_exists
-    def finished(self):
-        """Get finish time."""
-        return parse_resolwe_datetime(self._original_values["finished"])
+        super()._update_fields(payload, data_source)
 
     @property
     @assert_object_exists
@@ -425,5 +342,7 @@ class Data(BaseResolweResource):
         :return: Duplicated data object
         """
         task_data = self.api().duplicate.post({"ids": [self.id]})
-        background_task = BackgroundTask(resolwe=self.resolwe, **task_data)
+        background_task = BackgroundTask(
+            resolwe=self.resolwe, **task_data, initial_data_source=DataSource.SERVER
+        )
         return self.resolwe.data.get(id__in=background_task.result())

@@ -9,7 +9,10 @@ from mock import MagicMock, patch
 from resdk.resources.collection import BaseCollection, Collection
 from resdk.resources.data import Data
 from resdk.resources.descriptor import DescriptorSchema
+from resdk.resources.fields import FieldStatus
 from resdk.resources.process import Process
+
+from .utils import server_resource
 
 DATA0 = MagicMock(**{"files.return_value": [], "id": 0})
 
@@ -22,18 +25,39 @@ class TestBaseCollection(unittest.TestCase):
     def test_data_types(self):
         resolwe = MagicMock()
 
-        data1 = Data(resolwe=resolwe, id=1)
-        data1._process = Process(resolwe=resolwe, type="data:reads:fastq:single:")
+        data1 = server_resource(Data, resolwe=resolwe, id=1)
+        data1._process = server_resource(
+            Process, resolwe=resolwe, type="data:reads:fastq:single:"
+        )
 
-        collection = Collection(resolwe=resolwe, id=1)
+        collection = server_resource(Collection, resolwe=resolwe, id=1)
         collection._data = [data1]
+        collection._data_status = FieldStatus.SET
 
         types = collection.data_types()
         self.assertEqual(types, ["data:reads:fastq:single:"])
 
+        # Test id must be int.
+        with self.assertRaisesRegex(ValueError, "Type of 'Data.id' must be 'int'."):
+            server_resource(Data, resolwe=resolwe, id="1")
+
+        # Test tags is array of strings.
+        with self.assertRaisesRegex(
+            ValueError, "Type of 'Data.tags' must be a list or query."
+        ):
+            Data(resolwe=resolwe, tags=123)
+
+        # Test tags is array of strings.
+        with self.assertRaisesRegex(
+            ValueError, "Type of 'Data.tags' must be a list of 'str'."
+        ):
+            Data(resolwe=resolwe, tags=["first", 123])
+        Data(resolwe=resolwe, tags=["first", "second"])
+
     def test_files(self):
-        collection = Collection(resolwe=MagicMock(), id=1)
+        collection = server_resource(Collection, resolwe=MagicMock(), id=1)
         collection._data = [DATA1, DATA2]
+        collection._data_status = FieldStatus.SET
 
         files = collection.files()
         self.assertCountEqual(files, ["arch.gz", "reads.fq", "outfile.exp"])
@@ -55,14 +79,14 @@ class TestBaseCollectionDownload(unittest.TestCase):
         collection_mock.resolwe._download_files.assert_called_once_with(flist, None)
 
     def test_bad_field_name(self):
-        collection = Collection(resolwe=MagicMock(), id=1)
+        collection = server_resource(Collection, resolwe=MagicMock(), id=1)
         with self.assertRaisesRegex(ValueError, "Invalid argument value `field_name`."):
             collection.download(field_name=123)
 
 
 class TestCollection(unittest.TestCase):
     def test_descriptor_schema(self):
-        collection = Collection(id=1, resolwe=MagicMock())
+        collection = server_resource(Collection, id=1, resolwe=MagicMock())
         collection._descriptor_schema = 1
 
         # test getting descriptor schema attribute
@@ -87,17 +111,21 @@ class TestCollection(unittest.TestCase):
             ],
             "id": 1,
         }
-        collection = Collection(
-            id=1, descriptor_schema=descriptor_schema, resolwe=MagicMock()
+        collection = server_resource(
+            Collection, id=1, descriptor_schema=descriptor_schema, resolwe=MagicMock()
         )
         self.assertTrue(isinstance(collection.descriptor_schema, DescriptorSchema))
 
         self.assertEqual(collection.descriptor_schema.slug, "test-schema")
 
     def test_data(self):
-        collection = Collection(id=1, resolwe=MagicMock())
+        resolwe_mock = MagicMock()
+        collection = server_resource(Collection, id=1, resolwe=resolwe_mock)
 
         # test getting data attribute
+        filter_mock = MagicMock(return_value=["data_1", "data_2", "data_3"])
+        resolwe_mock.get_query_by_resource.return_value = MagicMock(filter=filter_mock)
+
         collection.resolwe.data.filter = MagicMock(
             return_value=["data_1", "data_2", "data_3"]
         )
@@ -105,25 +133,25 @@ class TestCollection(unittest.TestCase):
 
         # test caching data attribute
         self.assertEqual(collection.data, ["data_1", "data_2", "data_3"])
-        self.assertEqual(collection.resolwe.data.filter.call_count, 1)
+        self.assertEqual(filter_mock.call_count, 1)
 
         # cache is cleared at update
         collection._data = ["data"]
         collection.update()
         self.assertEqual(collection._data, None)
 
-        # raising error if collection is not saved
-        collection.id = None
+        # raising error if collection is not saved.
+        collection._id = None
         with self.assertRaises(ValueError):
-            _ = collection.data
+            collection.data
 
     def test_samples(self):
-        collection = Collection(id=1, resolwe=MagicMock())
+        resolwe_mock = MagicMock()
+        collection = server_resource(Collection, id=1, resolwe=resolwe_mock)
 
         # test getting samples attribute
-        collection.resolwe.sample.filter = MagicMock(
-            return_value=["sample1", "sample2"]
-        )
+        filter_mock = MagicMock(return_value=["sample1", "sample2"])
+        resolwe_mock.get_query_by_resource.return_value = MagicMock(filter=filter_mock)
         self.assertEqual(collection.samples, ["sample1", "sample2"])
 
         # cache is cleared at update
@@ -132,17 +160,17 @@ class TestCollection(unittest.TestCase):
         self.assertEqual(collection._samples, None)
 
         # raising error if data collection is not saved
-        collection.id = None
+        collection._id = None
         with self.assertRaises(ValueError):
-            _ = collection.samples
+            collection.samples
 
     def test_relations(self):
-        collection = Collection(id=1, resolwe=MagicMock())
+        resolwe_mock = MagicMock()
+        collection = server_resource(Collection, id=1, resolwe=resolwe_mock)
 
         # test getting relations attribute
-        collection.resolwe.relation.filter = MagicMock(
-            return_value=["relation1", "relation2"]
-        )
+        filter_mock = MagicMock(return_value=["relation1", "relation2"])
+        resolwe_mock.get_query_by_resource.return_value = MagicMock(filter=filter_mock)
         self.assertEqual(collection.relations, ["relation1", "relation2"])
 
         # cache is cleared at update
@@ -151,9 +179,9 @@ class TestCollection(unittest.TestCase):
         self.assertEqual(collection._relations, None)
 
         # raising error if data collection is not saved
-        collection.id = None
+        collection._id = None
         with self.assertRaises(ValueError):
-            _ = collection.relations
+            collection.relations
 
 
 if __name__ == "__main__":
