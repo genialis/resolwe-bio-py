@@ -8,6 +8,8 @@ from mock import MagicMock, patch
 
 from resdk.resources.geneset import Geneset
 
+from .utils import server_resource
+
 
 class TestGeneset(unittest.TestCase):
     def test_arguments(self):
@@ -38,7 +40,7 @@ class TestGeneset(unittest.TestCase):
         self.assertEqual(gs.source, "Test source")
 
         # saved geneset should not allow to change genes/species/source values
-        gs_saved = Geneset(MagicMock(), id=1)
+        gs_saved = server_resource(Geneset, MagicMock(), id=1)
         message = "Not allowed to change field source after geneset is saved"
         with self.assertRaisesRegex(ValueError, message):
             gs_saved.source = "Test source"
@@ -108,7 +110,8 @@ class TestGeneset(unittest.TestCase):
         self.assertEqual(not_implemented, NotImplemented)
 
     def test_fetch_data(self):
-        gs = Geneset(
+        gs = server_resource(
+            Geneset,
             MagicMock(),
             output={"geneset_json": 1, "source": "UCSC", "species": "Homo sapiens"},
             id=1,
@@ -124,16 +127,12 @@ class TestGeneset(unittest.TestCase):
 
     @patch("resdk.resources.geneset.Geneset", spec=True)
     def test_update_fields(self, geneset_mock):
-        geneset_mock.configure_mock(
-            id=1, slug="test", _original_values={"slug": "test-old"}
-        )
-        geneset_mock.WRITABLE_FIELDS = ("slug",)
-
-        geneset_mock.api = MagicMock(
-            **{"patch.return_value": {"id": 1, "slug": "test"}}
-        )
-        Geneset.save(geneset_mock)
-        self.assertEqual(geneset_mock._update_fields.call_count, 1)
+        geneset = server_resource(Geneset, MagicMock(), id=1, slug="test-old")
+        geneset.slug = "test"
+        update_mock = MagicMock()
+        geneset._update_fields = update_mock
+        geneset.save()
+        self.assertEqual(update_mock.call_count, 1)
 
     @patch("resdk.resources.geneset.Geneset", spec=True)
     def test_create(self, geneset_mock):

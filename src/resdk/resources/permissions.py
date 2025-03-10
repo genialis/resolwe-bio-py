@@ -3,6 +3,7 @@
 import copy
 
 from ..constants import ALL_PERMISSIONS
+from .fields import DataSource
 from .utils import is_group, is_user
 
 
@@ -216,15 +217,26 @@ class PermissionsManager:
                             id=item["id"],
                             first_name=item["name"],
                             username=item["username"],
+                            initial_data_source=DataSource.SERVER,
                         ),
                     )
                 elif item["type"] == "group":
                     holders.append(
-                        Group(self.resolwe, id=item["id"], name=item["name"])
+                        Group(
+                            self.resolwe,
+                            id=item["id"],
+                            name=item["name"],
+                            initial_data_source=DataSource.SERVER,
+                        )
                     )
                 elif item["type"] == "public":
                     holders.append(
-                        User(self.resolwe, username="public", first_name="Public")
+                        User(
+                            self.resolwe,
+                            username="public",
+                            first_name="Public",
+                            initial_data_source=DataSource.SERVER,
+                        )
                     )
         return holders
 

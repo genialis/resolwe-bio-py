@@ -8,19 +8,25 @@ from mock import MagicMock, patch
 
 from resdk.resources.data import Data
 from resdk.resources.descriptor import DescriptorSchema
+from resdk.resources.fields import FieldStatus
 from resdk.resources.process import Process
+
+from .utils import server_resource
 
 
 class TestData(unittest.TestCase):
     def test_sample(self):
-        data = Data(resolwe=MagicMock(), id=1)
-        data._original_values = {"entity": {"id": 5, "name": "XYZ"}}
+        data = server_resource(
+            Data, resolwe=MagicMock(), id=1, entity={"id": 5, "name": "XYZ"}
+        )
 
         self.assertEqual(data.sample.id, 5)
         self.assertEqual(data.sample.name, "XYZ")
 
     def test_collection(self):
-        data = Data(resolwe=MagicMock(), id=1, collection={"id": 5, "name": "XYZ"})
+        data = server_resource(
+            Data, resolwe=MagicMock(), id=1, collection={"id": 5, "name": "XYZ"}
+        )
 
         # test getting collections attribute
         self.assertEqual(data.collection.id, 5)
@@ -28,8 +34,10 @@ class TestData(unittest.TestCase):
 
     def test_descriptor_schema(self):
         resolwe = MagicMock()
-        data = Data(id=1, resolwe=resolwe)
-        data._descriptor_schema = DescriptorSchema(resolwe=resolwe, id=2)
+        data = server_resource(Data, id=1, resolwe=resolwe)
+        data._descriptor_schema = server_resource(
+            DescriptorSchema, resolwe=resolwe, id=2
+        )
 
         # test getting descriptor schema attribute
         self.assertEqual(data.descriptor_schema.id, 2)
@@ -53,7 +61,9 @@ class TestData(unittest.TestCase):
             ],
             "id": 1,
         }
-        data = Data(id=1, descriptor_schema=descriptor_schema, resolwe=MagicMock())
+        data = server_resource(
+            Data, id=1, descriptor_schema=descriptor_schema, resolwe=MagicMock()
+        )
         self.assertTrue(isinstance(data.descriptor_schema, DescriptorSchema))
 
         self.assertEqual(data.descriptor_schema.slug, "test-schema")
@@ -63,47 +73,49 @@ class TestData(unittest.TestCase):
 
     def test_parents(self):
         # Data with no id should fail.
-        data = Data(id=None, resolwe=MagicMock())
+        data = Data(resolwe=MagicMock())
         with self.assertRaisesRegex(ValueError, "Instance must be saved *"):
             data.parents
 
         # Core functionality should be checked with e2e tests.
 
         # Check that cache is cleared at update.
-        data = Data(id=42, resolwe=MagicMock())
+        data = server_resource(Data, id=42, resolwe=MagicMock())
         data._parents = "foo"
         data.update()
         self.assertEqual(data._parents, None)
 
     def test_children(self):
         # Data with no id should fail.
-        data = Data(id=None, resolwe=MagicMock())
+        data = Data(resolwe=MagicMock())
         with self.assertRaisesRegex(ValueError, "Instance must be saved *"):
             data.children
 
         # Core functionality should be checked with e2e tests.
 
         # Check that cache is cleared at update.
-        data = Data(id=42, resolwe=MagicMock())
+        data = server_resource(Data, id=42, resolwe=MagicMock())
         data._children = "foo"
         data.update()
         self.assertEqual(data._children, None)
 
     def test_files(self):
         resolwe = MagicMock()
-        data = Data(id=123, resolwe=resolwe)
+        data = server_resource(Data, id=123, resolwe=resolwe)
         data._get_dir_files = MagicMock(
             side_effect=[["first_dir/file1.txt"], ["fastq_dir/file2.txt"]]
         )
 
-        data.output = {
+        data._output_status = FieldStatus.SET
+        data._output = {
             "list": [{"file": "element.gz"}],
             "dir_list": [{"dir": "first_dir"}],
             "fastq": {"file": "file.fastq.gz"},
             "fastq_archive": {"file": "archive.gz"},
             "fastq_dir": {"dir": "fastq_dir"},
         }
-        data.process = Process(
+        data._process_status = FieldStatus.SET
+        data._process = Process(
             resolwe=resolwe,
             output_schema=[
                 {"name": "list", "label": "List", "type": "list:basic:file:"},
@@ -134,7 +146,8 @@ class TestData(unittest.TestCase):
         file_list = data.files(field_name="output.fastq")
         self.assertEqual(file_list, ["file.fastq.gz"])
 
-        data.output = {
+        data._output_status = FieldStatus.SET
+        data._output = {
             "list": [{"no_file_field_here": "element.gz"}],
         }
         data.process.output_schema = [
@@ -143,7 +156,7 @@ class TestData(unittest.TestCase):
         with self.assertRaisesRegex(KeyError, "does not contain 'file' key."):
             data.files()
 
-        data = Data(resolwe=MagicMock(), id=None)
+        data = Data(resolwe=MagicMock())
         with self.assertRaisesRegex(ValueError, "must be saved before"):
             data.files()
 
@@ -157,7 +170,7 @@ class TestData(unittest.TestCase):
             ),
             MagicMock(content=b'[{"type": "file", "name": "file2.txt"}]'),
         ]
-        data = Data(id=123, resolwe=resolwe_mock)
+        data = server_resource(Data, id=123, resolwe=resolwe_mock)
         files = data._get_dir_files("test_dir")
         self.assertEqual(files, ["test_dir/file1.txt", "test_dir/subdir/file2.txt"])
 

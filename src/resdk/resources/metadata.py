@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 
 import pandas as pd
 
+from .base import DataSource
 from .data import Data
 from .utils import get_collection_id
 
@@ -260,7 +261,7 @@ class Metadata(Data):
                 data["name"] = self.name
 
             model_data = self.api.post(data)
-            self._update_fields(model_data)
+            self._update_fields(model_data, DataSource.SERVER)
 
     def __repr__(self):
         """

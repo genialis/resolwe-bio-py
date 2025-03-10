@@ -3,6 +3,7 @@
 import logging
 
 from .base import BaseResolweResource
+from .fields import FieldAccessType, JSONField, StringField
 
 
 class DescriptorSchema(BaseResolweResource):
@@ -16,16 +17,10 @@ class DescriptorSchema(BaseResolweResource):
 
     endpoint = "descriptorschema"
 
-    READ_ONLY_FIELDS = BaseResolweResource.READ_ONLY_FIELDS + ("schema",)
-    WRITABLE_FIELDS = BaseResolweResource.WRITABLE_FIELDS + ("description",)
+    schema = JSONField()
+    description = StringField(access_type=FieldAccessType.WRITABLE)
 
     def __init__(self, resolwe, **model_data):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
-
-        #: description
-        self.description = None
-        #: schema
-        self.schema = None
-
         super().__init__(resolwe, **model_data)

@@ -6,6 +6,7 @@ from time import sleep, time
 from resdk.exceptions import ResolweServerError
 
 from .base import BaseResource
+from .fields import DateTimeField, JSONField, StringField
 
 
 class BackgroundTask(BaseResource):
@@ -18,35 +19,15 @@ class BackgroundTask(BaseResource):
     """
 
     endpoint = "task"
-
-    READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS + (
-        "started",
-        "finished",
-        "status",
-        "description",
-        "output",
-    )
-    WRITABLE_FIELDS = ()
+    started = DateTimeField()
+    finished = DateTimeField()
+    status = StringField()
+    description = StringField()
+    output = JSONField()
 
     def __init__(self, resolwe, **model_data):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
-
-        #: started
-        self.started = None
-        #: finished
-        self.finished = None
-        #: status - Possible values:
-        #: WA (waiting)
-        #: PR (processing)
-        #: OK (done)
-        #: ER (error)
-        self.status = None
-        #: description
-        self.description = None
-        #: output - JSON field, the actual value depends on the background task
-        self.output = None
-
         super().__init__(resolwe, **model_data)
 
     @property

@@ -8,13 +8,19 @@ from mock import MagicMock
 
 from resdk.resources.user import Group, User
 
+from .utils import server_resource
+
 
 class TestGroup(unittest.TestCase):
     def setUp(self):
         self.resolwe = MagicMock()
-        self.user = User(resolwe=self.resolwe, id=42)
-        self.group = Group(resolwe=self.resolwe, name="Test group", id=1)
-        self.group_no_id = Group(resolwe=self.resolwe, name="Test group")
+        self.user = server_resource(User, resolwe=self.resolwe, id=42)
+        self.group = server_resource(
+            Group, resolwe=self.resolwe, name="Test group", id=1
+        )
+        self.group_no_id = server_resource(
+            Group, resolwe=self.resolwe, name="Test group"
+        )
 
     def test_users_no_id(self):
         with self.assertRaises(ValueError):

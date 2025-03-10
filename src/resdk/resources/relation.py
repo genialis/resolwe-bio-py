@@ -2,11 +2,15 @@
 
 import logging
 
-from resdk.exceptions import ValidationError
-
 from .base import BaseResolweResource
-from .collection import Collection
-from .descriptor import DescriptorSchema
+from .fields import (
+    BooleanField,
+    DictResourceField,
+    FieldAccessType,
+    JSONField,
+    LazyResourceField,
+    StringField,
+)
 from .utils import get_sample_id
 
 
@@ -21,90 +25,40 @@ class Relation(BaseResolweResource):
 
     endpoint = "relation"
 
-    READ_ONLY_FIELDS = BaseResolweResource.READ_ONLY_FIELDS + ("descriptor_dirty",)
-
-    UPDATE_PROTECTED_FIELDS = BaseResolweResource.UPDATE_PROTECTED_FIELDS + ("type",)
-    WRITABLE_FIELDS = BaseResolweResource.WRITABLE_FIELDS + (
-        "collection",
-        "category",
-        "descriptor",
-        "descriptor_schema",
-        "partitions",
-        "unit",
+    descriptor_dirty = BooleanField()
+    type = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    collection = DictResourceField(
+        resource_class_name="Collection",
+        access_type=FieldAccessType.WRITABLE,
+        required=True,
+    )
+    category = StringField(access_type=FieldAccessType.WRITABLE)
+    descriptor = JSONField(access_type=FieldAccessType.WRITABLE)
+    descriptor_schema = DictResourceField(
+        resource_class_name="DescriptorSchema", access_type=FieldAccessType.WRITABLE
+    )
+    partitions = JSONField(access_type=FieldAccessType.WRITABLE, many=True)
+    unit = StringField(access_type=FieldAccessType.WRITABLE)
+    samples = LazyResourceField(
+        "Sample", lambda relation: relation._lazy_load_samples()
     )
 
     def __init__(self, resolwe, **model_data):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
-
-        #: Collection in which relation is
-        self._collection = None
-        #: ``DescriptorSchema`` of ``Relation`` object
-        self._descriptor_schema = None
-        #: List of samples in the relation
-        self._samples = None
-
-        #: indicate whether `descriptor` doesn't match `descriptor_schema` (is dirty)
-        self.descriptor_dirty = None
-        #: annotation data, with the form defined in descriptor_schema
-        self.descriptor = None
-        #: list of ``RelationPartition`` objects in the ``Relation``
-        self.partitions = None
-        #: type of the relation
-        self.type = None
-        #: category of the relation
-        self.category = None
-        #: unit (where applicable, e.g. for serieses)
-        self.unit = None
-
         super().__init__(resolwe, **model_data)
 
-    @property
-    def samples(self):
+    def _lazy_load_samples(self):
         """Return list of sample objects in the relation."""
-        if not self._samples:
-            if not self.partitions:
-                self._samples = []
-            else:
-                sample_ids = [partition["entity"] for partition in self.partitions]
-                self._samples = self.resolwe.sample.filter(id__in=sample_ids)
-                # Samples should be sorted, so they have same order as positions
-                # XXX: This may be slow for many samples in single collection
-                self._samples = sorted(
-                    self._samples, key=lambda sample: sample_ids.index(sample.id)
-                )
-        return self._samples
-
-    @property
-    def collection(self):
-        """Return collection object to which relation belongs."""
-        if not self._collection:
-            self._collection = self.resolwe.collection.get(
-                self._original_values.get("colection", None)
-            )
-        return self._collection
-
-    @collection.setter
-    def collection(self, payload):
-        """Set collection to which relation belongs."""
-        self._resource_setter(payload, Collection, "_collection")
-
-    @property
-    def descriptor_schema(self):
-        """Get descriptor schema."""
-        return self._descriptor_schema
-
-    @descriptor_schema.setter
-    def descriptor_schema(self, payload):
-        """Set descriptor schema."""
-        self._resource_setter(payload, DescriptorSchema, "_descriptor_schema")
-
-    def update(self):
-        """Clear cache and update resource fields from the server."""
-        self._samples = None
-        self._descriptor_schema = None
-
-        super().update()
+        if not self.partitions:
+            return []
+        else:
+            sample_ids = [partition["entity"] for partition in self.partitions]
+            samples = self.resolwe.sample.filter(id__in=sample_ids)
+            # Samples should be sorted, so they have same order as positions
+            # XXX: This may be slow for many samples in single collection
+            samples = sorted(samples, key=lambda sample: sample_ids.index(sample.id))
+        return samples
 
     def add_sample(self, sample, label=None, position=None):
         """Add ``sample`` object to relation."""
@@ -116,7 +70,7 @@ class Relation(BaseResolweResource):
             }
         )
         self.save()
-        self._samples = None
+        self._resource_fields["samples"].reset()
 
     def remove_samples(self, *samples):
         """Remove ``sample`` objects from relation."""
@@ -127,15 +81,7 @@ class Relation(BaseResolweResource):
             if partition["entity"] not in sample_ids
         ]
         self.save()
-        self._samples = None
-
-    def save(self):
-        """Check that collection is saved and save instance."""
-        if self._collection is None:
-            # `save` fails in an ugly way if collection is not set
-            raise ValidationError("`collection` attribute is required.")
-
-        super().save()
+        self._resource_fields["samples"].reset()
 
     def __repr__(self):
         """Format relation name."""

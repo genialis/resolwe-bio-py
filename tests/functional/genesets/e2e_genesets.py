@@ -19,7 +19,7 @@ class TestCreateGeneset(BaseResdkFunctionalTest):
             genes=["FHIT", "MYC"],
             source="UCSC",
             species="Homo sapiens",
-            collection=self.collection.id,
+            collection=self.collection,
         )
 
         self.assertTrue(isinstance(self.geneset, resdk.resources.Geneset))

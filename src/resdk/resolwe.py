@@ -21,7 +21,7 @@ from collections import defaultdict
 from contextlib import suppress
 from importlib.metadata import version as package_version
 from pathlib import Path
-from typing import List, Optional, TypedDict, Union
+from typing import Optional, TypedDict, Union
 from urllib.parse import urlencode, urljoin, urlparse
 
 import requests
@@ -57,6 +57,7 @@ from .resources import (
     User,
 )
 from .resources.base import BaseResource
+from .resources.fields import DataSource
 from .resources.kb import Feature, Mapping
 from .resources.utils import get_collection_id, get_data_id, is_data, iterate_fields
 from .utils import md5
@@ -464,7 +465,7 @@ class Resolwe:
             data["process_resources"] = process_resources
 
         model_data = self.api.data.post(data)
-        return Data(resolwe=self, **model_data)
+        return Data(resolwe=self, **model_data, initial_data_source=DataSource.SERVER)
 
     def get_or_run(self, slug=None, input={}):
         """Return existing object if found, otherwise create new one.
@@ -485,7 +486,7 @@ class Resolwe:
 
     def _download_files(
         self,
-        files: List[Union[str, Path]],
+        files: list[Union[str, Path]],
         download_dir: Union[str, None] = None,
         show_progress: bool = True,
     ):

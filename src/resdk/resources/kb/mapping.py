@@ -1,6 +1,6 @@
 """KB mapping resource."""
 
-from ..base import BaseResource
+from ..base import BaseResource, StringField
 
 
 class Mapping(BaseResource):
@@ -10,34 +10,13 @@ class Mapping(BaseResource):
     query_endpoint = "kb.mapping.search"
     query_method = "POST"
 
-    READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS + (
-        "relation_type",
-        "source_db",
-        "source_id",
-        "source_species",
-        "target_db",
-        "target_id",
-        "target_species",
-    )
-
-    def __init__(self, resolwe, **model_data):
-        """Initialize attributes."""
-        # Relation type (crossdb, ortholog, transcript, ...)
-        self.relation_type = None
-        #: Source database
-        self.source_db = None
-        #: Source feature ID
-        self.source_id = None
-        #: Source feature species
-        self.source_species = None
-        #: Target database
-        self.target_db = None
-        #: Target feature ID
-        self.target_id = None
-        #: Target feature species
-        self.target_species = None
-
-        super().__init__(resolwe, **model_data)
+    relation_type = StringField()
+    source_db = StringField()
+    source_id = StringField()
+    source_species = StringField()
+    target_db = StringField()
+    target_id = StringField()
+    target_species = StringField()
 
     def __repr__(self):
         """Format mapping representation."""

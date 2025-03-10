@@ -8,11 +8,12 @@ from mock import MagicMock
 
 from resdk.resources.collection import Collection
 
+from .utils import server_resource
+
 
 class TestCollection(unittest.TestCase):
     def test_create_group(self):
-        collection = Collection(id=1, resolwe=MagicMock())
-        collection.id = 1  # this is overriden when initialized
+        collection = server_resource(Collection, id=1, resolwe=MagicMock())
 
         # only samples
         collection.create_group_relation(category="replicates", samples=[1, 2, 3])
@@ -58,8 +59,7 @@ class TestCollection(unittest.TestCase):
         collection.resolwe.relation.create.reset_mock()
 
     def test_create_compare(self):
-        collection = Collection(id=1, resolwe=MagicMock())
-        collection.id = 1  # this is overriden when initialized
+        collection = server_resource(Collection, id=1, resolwe=MagicMock())
 
         # only samples
         collection.create_compare_relation(category="case-control", samples=[1, 2])
@@ -101,8 +101,7 @@ class TestCollection(unittest.TestCase):
         collection.resolwe.relation.create.reset_mock()
 
     def test_create_series(self):
-        collection = Collection(id=1, resolwe=MagicMock())
-        collection.id = 1  # this is overriden when initialized
+        collection = server_resource(Collection, id=1, resolwe=MagicMock())
 
         # only samples
         collection.create_series_relation(category="time-series", samples=[1, 2, 3])
@@ -161,8 +160,7 @@ class TestCollection(unittest.TestCase):
         collection.resolwe.relation.create.reset_mock()
 
     def test_create_background(self):
-        collection = Collection(id=1, resolwe=MagicMock())
-        collection.id = 1  # this is overriden when initialized
+        collection = server_resource(Collection, id=1, resolwe=MagicMock())
 
         # only samples
         collection.create_background_relation("background 1", "sample_1", ["sample_2"])

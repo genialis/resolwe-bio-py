@@ -8,7 +8,8 @@ from resdk.shortcuts.sample import SampleUtilsMixin
 
 from ..utils.decorators import assert_object_exists
 from .background_task import BackgroundTask
-from .collection import BaseCollection, Collection
+from .collection import BaseCollection
+from .fields import DataSource, DictResourceField, FieldAccessType, QueryRelatedField
 
 if TYPE_CHECKING:
     from .annotations import AnnotationValue
@@ -26,59 +27,29 @@ class Sample(SampleUtilsMixin, BaseCollection):
 
     endpoint = "sample"
 
-    WRITABLE_FIELDS = BaseCollection.WRITABLE_FIELDS + ("collection",)
+    collection = DictResourceField(
+        resource_class_name="Collection", access_type=FieldAccessType.WRITABLE
+    )
+    data = QueryRelatedField("Data")
+    relations = QueryRelatedField("Relation")
+    annotations = QueryRelatedField("AnnotationValue")
+    predictions = QueryRelatedField("PredictionValue")
 
     def __init__(self, resolwe, **model_data):
         """Initialize attributes."""
+        super().__init__(resolwe, **model_data)
         self.logger = logging.getLogger(__name__)
 
-        #: ``Collection``s that contains the ``Sample`` (lazy loaded)
-        self._collection = None
-        #: list of ``Relation`` objects in ``Collection`` (lazy loaded)
-        self._relations = None
         #: background ``Sample`` of the current ``Sample``
         self._background = None
         #: is this sample background to any other sample?
         self._is_background = None
 
-        super().__init__(resolwe, **model_data)
-
     def update(self):
         """Clear cache and update resource fields from the server."""
-        self._collection = None
-        self._relations = None
         self._background = None
         self._is_background = None
-
         super().update()
-
-    @property
-    @assert_object_exists
-    def data(self):
-        """Get data."""
-        if self._data is None:
-            self._data = self.resolwe.data.filter(entity=self.id)
-
-        return self._data
-
-    @property
-    def collection(self):
-        """Get collection."""
-        return self._collection
-
-    @collection.setter
-    def collection(self, payload):
-        """Set collection."""
-        self._resource_setter(payload, Collection, "_collection")
-
-    @property
-    @assert_object_exists
-    def relations(self):
-        """Get ``Relation`` objects for this sample."""
-        if self._relations is None:
-            self._relations = self.resolwe.relation.filter(entity=self.id)
-
-        return self._relations
 
     @property
     def background(self):
@@ -246,18 +217,10 @@ class Sample(SampleUtilsMixin, BaseCollection):
         :return: Duplicated sample
         """
         task_data = self.api().duplicate.post({"ids": [self.id]})
-        background_task = BackgroundTask(resolwe=self.resolwe, **task_data)
+        background_task = BackgroundTask(
+            resolwe=self.resolwe, **task_data, initial_data_source=DataSource.SERVER
+        )
         return self.resolwe.sample.get(id__in=background_task.result())
-
-    @property
-    def annotations(self):
-        """Get the annotations for the given sample."""
-        return self.resolwe.annotation_value.filter(entity=self.id)
-
-    @property
-    def predictions(self):
-        """Get the predictions for the given sample."""
-        return self.resolwe.prediction_value.filter(entity=self.id)
 
     def get_annotation(self, full_path: str) -> "AnnotationValue":
         """Get the AnnotationValue from full path.
@@ -282,8 +245,8 @@ class Sample(SampleUtilsMixin, BaseCollection):
             if value is None:
                 annotation_value.delete(force=force)
                 return None
-            annotation_value.value = value
-            annotation_value.save()
+            else:
+                field = annotation_value.field
         except LookupError:
             if value is None:
                 return None
@@ -291,10 +254,9 @@ class Sample(SampleUtilsMixin, BaseCollection):
                 field = self.resolwe.annotation_field.from_path(full_path)
             except LookupError:
                 raise ResolweServerError(f"Field '{full_path}' does not exist.")
-            annotation_value = self.resolwe.annotation_value.create(
-                sample=self.id, field=field.id, value=value
-            )
-        return annotation_value
+        return self.resolwe.annotation_value.create(
+            sample=self, field=field, value=value
+        )
 
     def get_annotations(self) -> Dict[str, Any]:
         """Get all annotations for the given sample in a dictionary."""
@@ -314,7 +276,7 @@ class Sample(SampleUtilsMixin, BaseCollection):
         """Get all predictions for the given sample in a dictionary."""
         return {
             str(prediction.field): prediction.value
-            for prediction in self.predictions.all()
+            for prediction in self.resolwe.prediction_value.filter(entity=self.id)
         }
 
     def set_predictions(

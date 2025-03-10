@@ -15,7 +15,10 @@ from slumber.exceptions import SlumberHttpBaseException
 from resdk.exceptions import ResolweServerError, ValidationError
 from resdk.resolwe import ResAuth, Resolwe, ResolweResource
 from resdk.resources import Collection, Data, Process
+from resdk.resources.fields import DataSource
 from resdk.uploader import Uploader
+
+from .utils import server_resource
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -319,8 +322,7 @@ class TestRun(unittest.TestCase):
 
     @patch("resdk.resolwe.Resolwe", spec=True)
     def test_dehydrate_data(self, resolwe_mock):
-        data_obj = Data(id=1, resolwe=MagicMock())
-        data_obj.id = 1  # this is overriden when initialized
+        data_obj = server_resource(Data, id=1, resolwe=MagicMock())
         process = self.process_mock
 
         result = Resolwe._process_inputs(resolwe_mock, {"genome": data_obj}, process)
@@ -340,7 +342,7 @@ class TestRun(unittest.TestCase):
         Resolwe.run(
             self=resolwe_mock,
             slug="process-slug",
-            collection=Collection(id=1, resolwe=MagicMock()),
+            collection=server_resource(Collection, id=1, resolwe=MagicMock()),
         )
         resolwe_mock.api.data.post.assert_called_once_with(
             {
@@ -372,7 +374,11 @@ class TestRun(unittest.TestCase):
         )
         # Confirm that no files to upload in input:
         self.assertEqual(resolwe_mock.uploader.upload.call_count, 0)
-        data_mock.assert_called_with(data="some_data", resolwe=resolwe_mock)
+        data_mock.assert_called_with(
+            data="some_data",
+            resolwe=resolwe_mock,
+            initial_data_source=DataSource.SERVER,
+        )
         self.assertEqual(data, "Data object")
 
 
