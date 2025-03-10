@@ -124,16 +124,12 @@ class TestGeneset(unittest.TestCase):
 
     @patch("resdk.resources.geneset.Geneset", spec=True)
     def test_update_fields(self, geneset_mock):
-        geneset_mock.configure_mock(
-            id=1, slug="test", _original_values={"slug": "test-old"}
-        )
-        geneset_mock.WRITABLE_FIELDS = ("slug",)
-
-        geneset_mock.api = MagicMock(
-            **{"patch.return_value": {"id": 1, "slug": "test"}}
-        )
-        Geneset.save(geneset_mock)
-        self.assertEqual(geneset_mock._update_fields.call_count, 1)
+        geneset = Geneset(MagicMock(), id=1, slug="test-old")
+        geneset.slug = "test"
+        update_mock = MagicMock()
+        geneset._update_fields = update_mock
+        geneset.save()
+        self.assertEqual(update_mock.call_count, 1)
 
     @patch("resdk.resources.geneset.Geneset", spec=True)
     def test_create(self, geneset_mock):

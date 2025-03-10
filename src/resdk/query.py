@@ -13,11 +13,15 @@ import collections
 import copy
 import logging
 import operator
+from typing import TYPE_CHECKING
 
 import tqdm
 
-from resdk.resources import AnnotationField, DescriptorSchema, PredictionField, Process
-from resdk.resources.base import BaseResource
+from resdk.resources import DescriptorSchema, Process
+from resdk.resources.base import BaseResource, DataSource
+
+if TYPE_CHECKING:
+    from resdk.resources import AnnotationField, PredictionField
 
 
 class ResolweQuery:
@@ -299,9 +303,12 @@ class ResolweQuery:
 
     def create(self, **model_data):
         """Return new instance of current resource."""
-        resource = self.resource(self.resolwe, **model_data)
+        data_source = DataSource.USER
+        # When calling create the user expects local field names are given, not server ones.
+        resource = self.resource(
+            self.resolwe, **model_data, data_origin_status=data_source
+        )
         resource.save()
-
         return resource
 
     def filter(self, **filters):

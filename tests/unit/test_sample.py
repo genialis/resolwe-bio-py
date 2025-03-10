@@ -63,9 +63,9 @@ class TestSample(unittest.TestCase):
         self.assertEqual(sample._data, None)
 
         # raising error if sample is not saved
-        sample.id = None
+        sample._id = None
         with self.assertRaises(ValueError):
-            _ = sample.data
+            sample.data
 
     def test_set_annotation(self):
         resolwe = MagicMock()

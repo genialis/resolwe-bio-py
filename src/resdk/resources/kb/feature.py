@@ -1,6 +1,6 @@
 """KB feature resource."""
 
-from ..base import BaseResource
+from ..base import BaseField, BaseResource
 
 
 class Feature(BaseResource):
@@ -10,40 +10,15 @@ class Feature(BaseResource):
     query_endpoint = "kb.feature"
     query_method = "POST"
 
-    READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS + (
-        "aliases",
-        "description",
-        "feature_id",
-        "full_name",
-        "name",
-        "source",
-        "species",
-        "sub_type",
-        "type",
-    )
-
-    def __init__(self, resolwe, **model_data):
-        """Initialize attributes."""
-        #: Aliases
-        self.aliases = None
-        #: Description
-        self.description = None
-        #: Feature ID
-        self.feature_id = None
-        #: Full name
-        self.full_name = None
-        #: Name
-        self.name = None
-        #: Source
-        self.source = None
-        #: Species
-        self.species = None
-        #: Feature subtype (tRNA, protein coding, rRNA, ...)
-        self.sub_type = None
-        #: Feature type (gene, transcript, exon, ...)
-        self.type = None
-
-        super().__init__(resolwe, **model_data)
+    aliases = BaseField()
+    description = BaseField()
+    feature_id = BaseField()
+    full_name = BaseField()
+    name = BaseField()
+    source = BaseField()
+    species = BaseField()
+    sub_type = BaseField()
+    type = BaseField()
 
     def __repr__(self):
         """Format feature representation."""

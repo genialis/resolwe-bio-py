@@ -607,6 +607,7 @@ class ResAuth(requests.auth.AuthBase):
         password: Optional[str] = None,
         url: str = DEFAULT_URL,
         interactive: bool = False,
+        cookies: Optional[AuthCookie] = None,
     ):
         """Authenticate user on Resolwe server."""
         self.logger = logging.getLogger(__name__)

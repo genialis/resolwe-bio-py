@@ -5,7 +5,7 @@ Unit tests for Metadata class.
 import unittest
 
 import pandas as pd
-from mock import MagicMock
+from mock import MagicMock, NonCallableMagicMock
 
 from resdk.resources import Collection, Metadata, Sample
 
@@ -15,8 +15,8 @@ class TestMetadata(unittest.TestCase):
         self.res = MagicMock()
 
         # Process
-        self.process = MagicMock(slug="upload-metadata")
-        self.process_unique = MagicMock(slug="upload-metadata-unique")
+        self.process = NonCallableMagicMock(slug="upload-metadata")
+        self.process_unique = NonCallableMagicMock(slug="upload-metadata-unique")
 
         # Samples
         self.sample1 = Sample(resolwe=self.res, id=10, slug="s1", name="S1")
