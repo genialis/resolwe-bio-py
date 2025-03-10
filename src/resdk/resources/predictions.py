@@ -2,7 +2,7 @@
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, NamedTuple, Optional, Type, Union
+from typing import TYPE_CHECKING, Iterable, NamedTuple, Optional, Type, Union
 
 from ..utils.decorators import assert_object_exists
 from .base import BaseResource
@@ -266,3 +266,92 @@ class PredictionValue(BaseResource):
             f"PredictionValue <path: {self.field.group.name}.{self.field.name}, "
             f"value: '{self.value}'>"
         )
+
+
+class PredictionFieldSet:
+    """The set of resources."""
+
+    def __init__(self, parent: BaseResource, field_name: str):
+        """Initialize the set."""
+        self._resources = set()
+        self._field_name = field_name
+        self._parent = parent
+
+    def add(self, *resources: Iterable[Union[BaseResource, int]], patch=True):
+        """Add the resource to the set."""
+        self._resources.update(
+            self._parent._get_resource(entry, PredictionField) for entry in resources
+        )
+        if patch:
+            self._patch()
+
+    def remove(self, *resource: Iterable[BaseResource], patch=True):
+        """Remove the resource from the set."""
+        self._resources.difference_update(resource)
+        if patch:
+            self._patch()
+
+    def clear(self, patch=True):
+        """Clear the set."""
+        self._resources.clear()
+        if patch:
+            self._patch()
+
+    def __iter__(self):
+        """Iterate over the set."""
+        return iter(self._resources)
+
+    def _patch(self):
+        """Send a list of resource ids to the server."""
+        self._parent.api(self._parent.id).patch(
+            {self._field_name: [item.id for item in self._resources]}
+        )
+
+    def __str__(self):
+        """Return user friendly string representation."""
+        return f"ResourceSet <{self._resources}>"
+
+
+class PredictionPreset(BaseResource):
+    """Resolwe PredictionPreset resource."""
+
+    endpoint = "prediction_preset"
+
+    READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS
+
+    UPDATE_PROTECTED_FIELDS = BaseResource.UPDATE_PROTECTED_FIELDS + ("contributor",)
+
+    WRITABLE_FIELDS = BaseResource.WRITABLE_FIELDS + ("name", "fields")
+
+    # fields = SetField()
+
+    def __init__(self, resolwe: "Resolwe", **model_data):
+        """Initialize the instance."""
+        self.logger = logging.getLogger(__name__)
+        #: prediction fields
+        self._fields = PredictionFieldSet(self, "fields")
+        super().__init__(resolwe, **model_data)
+
+    def _dehydrate_resources(self, obj):
+        """Prediction fields are serialized by id only.
+
+        For other fields use default serialization.
+        """
+        if isinstance(obj, PredictionField):
+            return obj.id
+        return super()._dehydrate_resources(obj)
+
+    @property
+    def fields(self):
+        """Get fields."""
+        return self._fields
+
+    @fields.setter
+    def fields(self, values: Iterable[PredictionField]):
+        """Set fields."""
+        self._fields.clear(patch=False)
+        self._fields.add(*values)
+
+    def __repr__(self):
+        """Return user friendly string representation."""
+        return f"PredictionPreset <name: {self.name}>"

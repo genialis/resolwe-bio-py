@@ -97,7 +97,7 @@ class BaseResource:
             return {"id": obj.id}
         if isinstance(obj, BaseResource):
             return {"id": obj.id}
-        if isinstance(obj, list):
+        if isinstance(obj, (list, set)):
             return [self._dehydrate_resources(element) for element in obj]
         if isinstance(obj, dict):
             return {key: self._dehydrate_resources(value) for key, value in obj.items()}
@@ -220,7 +220,7 @@ class BaseResource:
         else:
             return False
 
-    def _get_resourse(self, payload, resource):
+    def _get_resource(self, payload, resource):
         """Get ``resource`` from ``payload``."""
         if isinstance(payload, resource):
             return payload
@@ -231,12 +231,12 @@ class BaseResource:
         elif isinstance(payload, str):
             return resource.fetch_object(self.resolwe, slug=payload)
         elif isinstance(payload, list):
-            return [self._get_resourse(item, resource) for item in payload]
+            return [self._get_resource(item, resource) for item in payload]
         return payload
 
     def _resource_setter(self, payload, resource, field):
         """Set ``resource`` with ``payload`` on ``field``."""
-        setattr(self, field, self._get_resourse(payload, resource))
+        setattr(self, field, self._get_resource(payload, resource))
 
 
 class BaseResolweResource(BaseResource):
