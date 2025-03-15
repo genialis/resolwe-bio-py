@@ -5,6 +5,7 @@ import logging
 from collections import Counter
 from urllib.parse import urljoin
 
+from .base import DataSource
 from .data import Data
 from .utils import get_collection_id
 
@@ -130,7 +131,7 @@ class Geneset(Data):
 
             model_data = self.api.post(data)
             tmp_genes, tmp_source, tmp_species = self.genes, self.source, self.species
-            self._update_fields(model_data)
+            self._update_fields(model_data, DataSource.SERVER)
             # Since there is no output values in model_data
             # the original genes, source and species values gets overwritten
             # so we set them back here

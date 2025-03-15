@@ -8,7 +8,14 @@ from resdk.shortcuts.collection import CollectionRelationsMixin
 from ..utils.decorators import assert_object_exists
 from .background_task import BackgroundTask
 from .base import BaseResolweResource
-from .descriptor import DescriptorSchema
+from .fields import (
+    BooleanField,
+    DateTimeField,
+    DictField,
+    DictResourceField,
+    FieldAccessType,
+    StringField,
+)
 from .utils import _get_billing_account_id
 
 
@@ -32,62 +39,32 @@ class BaseCollection(BaseResolweResource):
         "Do you really want to delete {} objects and all of their content?[yN]"
     )
 
-    READ_ONLY_FIELDS = BaseResolweResource.READ_ONLY_FIELDS + (
-        "descriptor_dirty",
-        "duplicated",
+    desriptor_dirty = BooleanField()
+    duplicated = DateTimeField()
+
+    description = StringField(access_type=FieldAccessType.WRITABLE)
+    descriptor = DictField(access_type=FieldAccessType.WRITABLE)
+    descriptor_schema = DictResourceField(
+        resource_class_name="DescriptorSchema",
+        property_name="slug",
+        access_type=FieldAccessType.WRITABLE,
     )
-    WRITABLE_FIELDS = BaseResolweResource.WRITABLE_FIELDS + (
-        "description",
-        "descriptor",
-        "descriptor_schema",
-        "settings",
-        "tags",
-    )
+    settings = DictField(access_type=FieldAccessType.WRITABLE)
+    tags = StringField(access_type=FieldAccessType.WRITABLE, many=True)
 
     def __init__(self, resolwe, **model_data):
         """Initialize attributes."""
-        self.logger = logging.getLogger(__name__)
-
-        #: list of Data objects in collection (lazy loaded)
-        self._data = None
-        #: ``DescriptorSchema`` of a resource object (lazy loaded)
-        self._descriptor_schema = None
-
-        #: description
-        self.description = None
-        #: descriptor
-        self.descriptor = None
-        #: descriptor_dirty
-        self.descriptor_dirty = None
-        #: duplicatied
-        self.duplicated = None
-        #: settings
-        self.settings = None
-        #: tags
-        self.tags = None
-
         super().__init__(resolwe, **model_data)
+
+        self.logger = logging.getLogger(__name__)
 
     @property
     def data(self):
         """Return list of attached Data objects."""
         raise NotImplementedError("This should be implemented in subclass")
 
-    @property
-    def descriptor_schema(self):
-        """Descriptor schema."""
-        return self._descriptor_schema
-
-    @descriptor_schema.setter
-    def descriptor_schema(self, payload):
-        """Set descriptor schema."""
-        self._resource_setter(payload, DescriptorSchema, "_descriptor_schema")
-
     def update(self):
         """Clear cache and update resource fields from the server."""
-        self._data = None
-        self._descriptor_schema = None
-
         super().update()
 
     def data_types(self):
@@ -154,16 +131,37 @@ class Collection(CollectionRelationsMixin, BaseCollection):
 
     endpoint = "collection"
 
+    data = DictResourceField(
+        resource_class_name="Data",
+        many=True,
+        initial_loader=lambda collection: collection.resolwe.data.filter(
+            collection=collection.id
+        ),
+        assert_exists=True,
+    )
+
+    samples = DictResourceField(
+        resource_class_name="Sample",
+        many=True,
+        initial_loader=lambda collection: collection.resolwe.sample.filter(
+            collection=collection.id
+        ),
+        assert_exists=True,
+    )
+
+    relations = DictResourceField(
+        resource_class_name="Relation",
+        many=True,
+        initial_loader=lambda collection: collection.resolwe.relation.filter(
+            collection=collection.id
+        ),
+        assert_exists=True,
+    )
+
     def __init__(self, resolwe, **model_data):
         """Initialize attributes."""
-        self.logger = logging.getLogger(__name__)
-
-        #: list of ``Sample`` objects in ``Collection`` (lazy loaded)
-        self._samples = None
-        #: list of ``Relation`` objects in ``Collection`` (lazy loaded)
-        self._relations = None
-
         super().__init__(resolwe, **model_data)
+        self.logger = logging.getLogger(__name__)
 
     def update(self):
         """Clear cache and update resource fields from the server."""
@@ -171,33 +169,6 @@ class Collection(CollectionRelationsMixin, BaseCollection):
         self._relations = None
 
         super().update()
-
-    @property
-    @assert_object_exists
-    def data(self):
-        """Return list of data objects on collection."""
-        if self._data is None:
-            self._data = self.resolwe.data.filter(collection=self.id)
-
-        return self._data
-
-    @property
-    @assert_object_exists
-    def samples(self):
-        """Return list of samples on collection."""
-        if self._samples is None:
-            self._samples = self.resolwe.sample.filter(collection=self.id)
-
-        return self._samples
-
-    @property
-    @assert_object_exists
-    def relations(self):
-        """Return list of data objects on collection."""
-        if self._relations is None:
-            self._relations = self.resolwe.relation.filter(collection=self.id)
-
-        return self._relations
 
     @assert_object_exists
     def duplicate(self):
