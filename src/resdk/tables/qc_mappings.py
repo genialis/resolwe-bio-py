@@ -4,13 +4,16 @@ Column mappings with the GENERAL_ prefix are designated for the general summary 
 In this case, the mappings are not split by file from which the information is extracted
 but based on the type of information.
 
-If ''name'' key includes a list, it means that the column names have changed between MultiQC versions.
-Using both names ensures that the correct column is selected regardless of the MultiQC version used
-when processing the data.
+If ''name'' key includes a list,
+it means that the column names have changed between MultiQC versions.
+Using both names ensures that the correct column is selected regardless
+of the MultiQC version used when processing the data.
 
-Key ''scaling_factor'' is used to get values on a common scale. For example, if the value is provided in millions,
-the scaling factor is 1e6. This change in MultiQC generated summary table files was observed when updating
-the MultiQC version, where read counts were formatted in more human readable format (millions) instead of whole numbers.
+Key ''scaling_factor'' is used to get values on a common scale.
+For example, if the value is provided in millions, the scaling factor is 1e6.
+This change in MultiQC generated summary table files was observed when updating
+the MultiQC version, where read counts were formatted
+in more human readable format (millions) instead of whole numbers.
 """
 
 SAMPLE_INFO_MAP = [
