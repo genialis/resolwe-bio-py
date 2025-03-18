@@ -29,7 +29,7 @@ class AnnotationGroup(BaseResource):
     endpoint = "annotation_group"
 
     name = StringField()
-    label = StringField()
+    label = BaseField()
     sort_order = IntegerField()
 
     def __init__(self, resolwe: "Resolwe", **model_data):
@@ -53,7 +53,7 @@ class AnnotationField(BaseResource):
 
     description = StringField()
     group = DictResourceField(resource_class_name="AnnotationGroup", required=True)
-    label = StringField()
+    label = BaseField()
     name = StringField()
     sort_order = IntegerField()
     type = StringField()
@@ -87,7 +87,7 @@ class AnnotationValue(BaseResource):
 
     endpoint = "annotation_value"
 
-    label = StringField()
+    label = BaseField()
     field = IdResourceField(
         resource_class_name="AnnotationField",
         access_type=FieldAccessType.UPDATE_PROTECTED,
