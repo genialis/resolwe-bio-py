@@ -16,9 +16,10 @@ import operator
 from typing import TYPE_CHECKING
 
 import tqdm
+
 from resdk.resources import DescriptorSchema, Process
 from resdk.resources.base import BaseResource
-from resdk.resources.fields import DataSource
+from resdk.resources.fields import DataSource, FieldStatus
 
 if TYPE_CHECKING:
     from resdk.resources import AnnotationField, PredictionField
@@ -416,20 +417,35 @@ class AnnotationValueQuery(ResolweQuery):
         # Execute the query in a single request.
         super()._fetch()
 
-        missing = collections.defaultdict(list)
+        missing_fields = collections.defaultdict(set)
+        missing_samples = collections.defaultdict(set)
         for value in self._cache:
-            if value._field is None:
-                missing[value.field_id].append(value)
+            if value._sample_status == FieldStatus.LAZY:
+                missing_samples[value._sample_original].add(value)
+            if value._field_status == FieldStatus.LAZY:
+                missing_fields[value._field_original].add(value)
 
-        if missing:
+        if missing_fields:
             # Get corresponding annotation field details in a single query and attach it to
             # the values.
             for field in self.resolwe.annotation_field.filter(
-                id__in=missing.keys()
+                id__in=missing_fields.keys()
             ).iterate():
-                for value in missing[field.id]:
+                for value in missing_fields[field.id]:
                     value._field = field
-                    value._original_values["field"] = field._original_values
+                    value._field_original = field
+                    value._field_status = FieldStatus.SET
+
+        if missing_samples:
+            # Get corresponding annotation field details in a single query and attach it to
+            # the values.
+            for sample in self.resolwe.sample.filter(
+                id__in=missing_samples.keys()
+            ).iterate():
+                for value in missing_samples[sample.id]:
+                    value._sample = sample
+                    value._sample_original = sample
+                    value._sample_status = FieldStatus.SET
 
 
 class PredictionFieldQuery(ResolweQuery):

@@ -310,7 +310,7 @@ class BaseTables(abc.ABC):
         sample_dtypes = defaultdict(dict)
         # Getting annotation values for large collection breaks the server.
         # Instead make smaller queries for a single batch of samples
-        batch_size = 100
+        batch_size = 1000
         for i in self.tqdm(
             range(0, len(self._samples), batch_size), desc="Downloading annotations"
         ):

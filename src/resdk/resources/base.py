@@ -175,6 +175,10 @@ class BaseResource:
         }:
             self._update_fields(api_call(payload), data_source=DataSource.SERVER)
 
+    def __hash__(self):
+        """Get the hash."""
+        return getattr(self, "id", None)
+
     def delete(self, force=False):
         """Delete the resource object from the server.
 
