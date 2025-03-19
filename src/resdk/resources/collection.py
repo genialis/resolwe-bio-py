@@ -222,3 +222,13 @@ class Collection(CollectionRelationsMixin, BaseCollection):
             data={"collection_id": self.id},
         )
         response.raise_for_status()
+
+    def assign_prediction_fields(self, fields):
+        """Assign prediction fields to the collection."""
+        response = self.resolwe.session.post(
+            urljoin(
+                self.resolwe.url, f"api/collection/{self.id}/set_prediction_fields"
+            ),
+            json={"field_ids": [field.id for field in fields]},
+        )
+        response.raise_for_status()
