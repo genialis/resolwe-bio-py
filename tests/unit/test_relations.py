@@ -6,6 +6,7 @@ import unittest
 
 from mock import MagicMock, patch
 
+from resdk.resources.base import DataSource
 from resdk.resources.collection import Collection
 from resdk.resources.descriptor import DescriptorSchema
 from resdk.resources.relation import Relation
@@ -13,7 +14,7 @@ from resdk.resources.relation import Relation
 
 class TestRelation(unittest.TestCase):
     def test_samples(self):
-        relation = Relation(id=1, resolwe=MagicMock())
+        relation = Relation(id=1, collection=None, resolwe=MagicMock())
 
         sample_1 = MagicMock(id=1)
         sample_2 = MagicMock(id=2)
@@ -32,16 +33,17 @@ class TestRelation(unittest.TestCase):
 
         # cache is cleared at update
         relation._samples = ["sample"]
-        relation.update()
+        relation._update_fields(
+            {"id": 1, "collection": None}, data_source=DataSource.SERVER
+        )
         self.assertEqual(relation._samples, None)
 
     # I appears it is not possible to deepcopy MagicMocks so we just patch
     # the deepcopy functionality:
     @patch("resdk.resources.base.copy")
     def test_collection(self, copy_mock):
-        relation = Relation(id=1, resolwe=MagicMock())
+        relation = Relation(id=1, collection=None, resolwe=MagicMock())
         collection = Collection(id=3, resolwe=MagicMock())
-        collection.id = 3  # this is overriden when initialized
 
         # get collection
         relation.resolwe.collection.get = MagicMock(return_value=collection)
@@ -52,9 +54,8 @@ class TestRelation(unittest.TestCase):
     # the deepcopy functionality:
     @patch("resdk.resources.base.copy")
     def test_descriptor_schema(self, copy_mock):
-        relation = Relation(id=1, resolwe=MagicMock())
+        relation = Relation(id=1, collection=None, resolwe=MagicMock())
         ds = DescriptorSchema(id=3, resolwe=MagicMock())
-        ds.id = 3  # this is overriden when initialized
 
         # get collection
         relation.resolwe.descriptor_schema.get = MagicMock(return_value=ds)
@@ -62,17 +63,21 @@ class TestRelation(unittest.TestCase):
         self.assertEqual(relation.descriptor_schema, ds)
 
     def test_repr(self):
-        relation = Relation(id=1, resolwe=MagicMock())
-        relation.type = "compare"
-        relation.unit = "min"
-        relation.category = "background"
-
         # `name` cannot be mocked in another way
         sample_1 = MagicMock()
         sample_1.configure_mock(name="sample_1")
         sample_2 = MagicMock()
         sample_2.configure_mock(name="sample_2")
-        relation._samples = [sample_1, sample_2]
+
+        relation = Relation(
+            id=1,
+            collection=None,
+            type="compare",
+            unit="min",
+            category="background",
+            samples=[sample_1, sample_2],
+            resolwe=MagicMock(),
+        )
 
         # Positions and labels are given
         relation.partitions = [
