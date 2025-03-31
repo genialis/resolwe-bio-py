@@ -3,11 +3,15 @@
 import json
 import logging
 from collections import Counter
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import urljoin
 
 from .base import DataSource
 from .data import Data
 from .utils import get_collection_id
+
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
 
 
 class Geneset(Data):
@@ -19,13 +23,20 @@ class Geneset(Data):
 
     """
 
-    def __init__(self, resolwe, genes=None, source=None, species=None, **model_data):
+    def __init__(
+        self,
+        resolwe: "Resolwe",
+        genes: Optional[list[str]] = None,
+        source: Optional[str] = None,
+        species: Optional[str] = None,
+        **model_data: dict,
+    ):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
 
         super().__init__(resolwe, **model_data)
 
-        self._genes = None
+        self._genes: Optional[set[str]] = None
         self._source = source
         self._species = species
 
@@ -34,7 +45,7 @@ class Geneset(Data):
             self.genes = genes
 
     @property
-    def genes(self):
+    def genes(self) -> list[str]:
         """Get genes."""
         if self._genes is None or len(self._genes) == 0:
             if self.id and "geneset_json" in self.output:
@@ -42,13 +53,16 @@ class Geneset(Data):
                     self.resolwe.url,
                     "api/storage/{}".format(self.output["geneset_json"]),
                 )
+                assert self.resolwe.session is not None
                 response = self.resolwe.session.get(url, auth=self.resolwe.auth)
                 response = json.loads(response.content.decode("utf-8"))
+                assert isinstance(response, dict)
                 self._genes = set(response["json"]["genes"])
+        assert self._genes is not None
         return sorted(self._genes)
 
     @genes.setter
-    def genes(self, genes):
+    def genes(self, genes: Optional[list[str]]):
         """Set genes."""
         self._assert_allow_change("genes")
         if genes is not None:
@@ -56,39 +70,39 @@ class Geneset(Data):
             if len(set(genes)) != len(genes):
                 counter = Counter(list(genes))
                 duplicates = [gene for gene, count in counter.items() if count >= 2]
-                duplicates = ", ".join(sorted(duplicates))
+                duplicates_str = ", ".join(sorted(duplicates))
                 raise ValueError(
-                    f"Gene list should only contain unique elements. There are duplicates: {duplicates}"
+                    f"Gene list should only contain unique elements. There are duplicates: {duplicates_str}"
                 )
             self._genes = set(genes)
 
     @property
-    def source(self):
+    def source(self) -> Optional[str]:
         """Get source."""
         if self._source is None and self.id and "source" in self.output:
             self._source = self.output["source"]
         return self._source
 
     @source.setter
-    def source(self, new_source):
+    def source(self, new_source: str):
         """Set source."""
         self._assert_allow_change("source")
         self._source = new_source
 
     @property
-    def species(self):
+    def species(self) -> Optional[str]:
         """Get species."""
         if self._species is None and self.id and "species" in self.output:
             self._species = self.output["species"]
         return self._species
 
     @species.setter
-    def species(self, new_species):
+    def species(self, new_species: str):
         """Set species."""
         self._assert_allow_change("species")
         self._species = new_species
 
-    def _assert_allow_change(self, field_name):
+    def _assert_allow_change(self, field_name: str):
         """Assert that this Geneset obj is not saved yet."""
         if self.id:
             msg = "Not allowed to change field {} after geneset is saved".format(

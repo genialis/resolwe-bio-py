@@ -5,6 +5,7 @@ import os
 import tempfile
 import warnings
 from io import BytesIO
+from typing import TYPE_CHECKING, Callable, Optional
 from urllib.parse import urljoin
 
 import pandas as pd
@@ -12,6 +13,9 @@ import pandas as pd
 from .base import DataSource
 from .data import Data
 from .utils import get_collection_id
+
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
 
 
 class Metadata(Data):
@@ -32,10 +36,10 @@ class Metadata(Data):
         "ms#Sample name": "name",
     }
 
-    def __init__(self, resolwe, **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
-        self._df_bytes = None
+        self._df_bytes: Optional[BytesIO] = None
         self._df = model_data.pop("df", None)
 
         super().__init__(resolwe, **model_data)
@@ -45,7 +49,7 @@ class Metadata(Data):
             self.unique = model_data.get("unique", True)
 
     @property
-    def unique(self):
+    def unique(self) -> bool:
         """Get unique attribute.
 
         This attribute tells if Metadata has one-to-one or one-to-many
@@ -58,7 +62,7 @@ class Metadata(Data):
         return True
 
     @unique.setter
-    def unique(self, value):
+    def unique(self, value: bool):
         if self.id:
             raise ValueError(
                 "Setting unique attribute on already uploaded Metadata is not allowed!"
@@ -69,10 +73,11 @@ class Metadata(Data):
         # In practice value of unique property is just a proxy for process
         # Therefore, store process instead of unique
         slug = "upload-metadata-unique" if value else "upload-metadata"
+        assert self.resolwe.process is not None
         self.process = self.resolwe.process.get(slug=slug, ordering="-created", limit=1)
 
     @property
-    def df_bytes(self):
+    def df_bytes(self) -> BytesIO:
         """Get file contents of table output in bytes form."""
         if self._df_bytes is None:
             if not (self.id and "table" in self.output):
@@ -90,7 +95,7 @@ class Metadata(Data):
         self._df_bytes.seek(0)
         return self._df_bytes
 
-    def set_index(self, df):
+    def set_index(self, df: pd.DataFrame) -> pd.DataFrame:
         """Set index of df to Sample ID.
 
         If there is a column with ``Sample ID`` just set that as index. If there is
@@ -131,7 +136,7 @@ class Metadata(Data):
 
         return df.set_index("Sample ID")
 
-    def validate_df(self, df):
+    def validate_df(self, df: pd.DataFrame):
         """Validate df property.
 
         Validates that df:
@@ -176,7 +181,7 @@ class Metadata(Data):
                 f"There are {len(not_in_df)} samples in collection that are not in df: {missing}"
             )
 
-    def get_df(self, parser=None, **kwargs):
+    def get_df(self, parser: Optional[Callable] = None, **kwargs):
         """Get table as pd.DataFrame."""
         # Do not use cached value if parser is specified
         if self._df is None or parser is not None:
@@ -212,7 +217,7 @@ class Metadata(Data):
 
         return self._df
 
-    def set_df(self, value):
+    def set_df(self, value: pd.DataFrame):
         """Set df."""
         if self.id:
             raise ValueError(
@@ -263,7 +268,7 @@ class Metadata(Data):
             model_data = self.api.post(data)
             self._update_fields(model_data, DataSource.SERVER)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Format name.
 

@@ -13,7 +13,7 @@ import collections
 import copy
 import logging
 import operator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Union
 
 import tqdm
 
@@ -22,6 +22,7 @@ from resdk.resources.base import BaseResource
 from resdk.resources.fields import DataSource, FieldStatus
 
 if TYPE_CHECKING:
+    from resdk import Resolwe
     from resdk.resources import AnnotationField, PredictionField
 
 
@@ -86,7 +87,9 @@ class ResolweQuery:
     api = None
     logger = None
 
-    def __init__(self, resolwe, resource, slug_field="slug"):
+    def __init__(
+        self, resolwe: "Resolwe", resource: type[BaseResource], slug_field: str = "slug"
+    ):
         """Initialize attributes."""
         self.resolwe = resolwe
         self.resource = resource
@@ -98,11 +101,13 @@ class ResolweQuery:
 
         self.logger = logging.getLogger(__name__)
 
-    def _non_string_iterable(self, item) -> bool:
+    def _non_string_iterable(self, item: Iterable) -> bool:
         """Return True when item is iterable but not string."""
         return isinstance(item, collections.abc.Iterable) and not isinstance(item, str)
 
-    def __getitem__(self, index):
+    def __getitem__(
+        self, index: Union[slice, int]
+    ) -> Union["BaseResource", "ResolweQuery"]:
         """Retrieve an item or slice from the set of results."""
         if not isinstance(index, (slice, int)):
             raise TypeError
@@ -147,17 +152,17 @@ class ResolweQuery:
         self._fetch()
         return iter(self._cache)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return string representation of the current object."""
         self._fetch()
         rep = "[{}]".format(",\n ".join(str(obj) for obj in self._cache))
         return rep
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Return length of results of current query."""
         return self.count()
 
-    def _clone(self):
+    def _clone(self) -> "ResolweQuery":
         """Return copy of current object with empty cache."""
         new_obj = self.__class__(self.resolwe, self.resource)
         new_obj._filters = copy.deepcopy(self._filters)
@@ -176,7 +181,7 @@ class ResolweQuery:
 
         return obj
 
-    def _add_filter(self, filter_):
+    def _add_filter(self, filter_: dict):
         """Add filtering parameters."""
         for key, value in filter_.items():
             # 'sample' is called 'entity' in the backend.
@@ -204,7 +209,7 @@ class ResolweQuery:
 
         return dict(filters)
 
-    def _populate_resource(self, data):
+    def _populate_resource(self, data: dict) -> BaseResource:
         """Populate resource with given data."""
         return self.resource(
             resolwe=self.resolwe, **data, initial_data_source=DataSource.SERVER
@@ -241,7 +246,7 @@ class ResolweQuery:
         self._cache = None
         self._count = None
 
-    def count(self):
+    def count(self) -> int:
         """Return number of objects in current query."""
         if self._count is None:
             count_query = self._clone()
@@ -304,19 +309,19 @@ class ResolweQuery:
 
         return response[0]
 
-    def create(self, **model_data):
+    def create(self, **model_data: dict) -> BaseResource:
         """Return new instance of current resource."""
         resource = self.resource(self.resolwe, **model_data)
         resource.save()
         return resource
 
-    def filter(self, **filters):
+    def filter(self, **filters: dict) -> "ResolweQuery":
         """Return clone of current query with added given filters."""
         new_query = self._clone()
         new_query._add_filter(filters)
         return new_query
 
-    def delete(self, force=False):
+    def delete(self, force: bool = False):
         """Delete objects in current query.
 
         :param bool force: Do not trigger confirmation prompt. WARNING: Be
@@ -334,7 +339,7 @@ class ResolweQuery:
 
         self.clear_cache()
 
-    def all(self):
+    def all(self) -> "ResolweQuery":
         """Return copy of the current queryset.
 
         This is handy function to get newly created query without any
@@ -342,7 +347,7 @@ class ResolweQuery:
         """
         return self._clone()
 
-    def search(self, text):
+    def search(self, text: str) -> "ResolweQuery":
         """Full text search."""
         if not self.resource.full_search_paramater:
             raise NotImplementedError()
@@ -351,7 +356,9 @@ class ResolweQuery:
         new_query._add_filter({self.resource.full_search_paramater: text})
         return new_query
 
-    def iterate(self, chunk_size=100, show_progress=False):
+    def iterate(
+        self, chunk_size: int = 100, show_progress: bool = False
+    ) -> Iterable["BaseResource"]:
         """
         Iterate through query.
 

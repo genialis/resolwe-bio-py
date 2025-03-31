@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urljoin
 
 from resdk.constants import CHUNK_SIZE
@@ -22,6 +22,9 @@ from .fields import (
     StringField,
 )
 from .utils import flatten_field
+
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
 
 
 class Data(BaseResolweResource):
@@ -77,7 +80,7 @@ class Data(BaseResolweResource):
     started = DateTimeField(access_type=FieldAccessType.READ_ONLY)
     finished = DateTimeField(access_type=FieldAccessType.READ_ONLY)
 
-    def __init__(self, resolwe, **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
 
@@ -98,7 +101,9 @@ class Data(BaseResolweResource):
 
         super().__init__(resolwe, **model_data)
 
-    def _update_fields(self, payload, data_source):
+    def _update_fields(
+        self, payload: dict[str, Any], data_source: DataSource = DataSource.USER
+    ):
         """Update fields of the local resource based on the server values."""
         # The payload contains collection information and sample information on the top
         # level. The collection also contains the sample information, but only as id.
@@ -168,7 +173,12 @@ class Data(BaseResolweResource):
             {"resource_overrides": {self.id: overrides}}
         )
 
-    def _files_dirs(self, field_type, file_name=None, field_name=None):
+    def _files_dirs(
+        self,
+        field_type: str,
+        file_name: Optional[str] = None,
+        field_name: Optional[str] = None,
+    ) -> list[str]:
         """Get list of downloadable fields."""
         download_list = []
 
@@ -200,16 +210,20 @@ class Data(BaseResolweResource):
 
         return download_list
 
-    def _get_dir_files(self, dir_name):
-        files_list, dir_list = [], []
+    def _get_dir_files(self, dir_name: str) -> list[str]:
+        files_list: list[str] = []
+        dir_list: list[str] = []
 
         dir_url = urljoin(self.resolwe.url, "data/{}/{}".format(self.id, dir_name))
         if not dir_url.endswith("/"):
             dir_url += "/"
+        assert self.resolwe.session is not None
         response = self.resolwe.session.get(dir_url, auth=self.resolwe.auth)
         response = json.loads(response.content.decode("utf-8"))
 
+        assert isinstance(response, list), "Invalid response from server."
         for obj in response:
+            assert isinstance(obj, dict), "Invalid response from server."
             obj_path = "{}/{}".format(dir_name, obj["name"])
             if obj["type"] == "directory":
                 dir_list.append(obj_path)
@@ -223,17 +237,12 @@ class Data(BaseResolweResource):
         return files_list
 
     @assert_object_exists
-    def files(self, file_name=None, field_name=None):
+    def files(
+        self, file_name: Optional[str] = None, field_name: Optional[str] = None
+    ) -> list[str]:
         """Get list of downloadable file fields.
 
         Filter files by file name or output field.
-
-        :param file_name: name of file
-        :type file_name: string
-        :param field_name: output field name
-        :type field_name: string
-        :rtype: List of tuples (data_id, file_name, field_name, process_type)
-
         """
         file_list = self._files_dirs("file", file_name, field_name)
 
@@ -248,7 +257,7 @@ class Data(BaseResolweResource):
         field_name: Optional[str] = None,
         download_dir: Optional[str] = None,
         show_progress: bool = True,
-    ):
+    ) -> list[str]:
         """Download Data object's files and directories.
 
         Download files and directories from the Resolwe server to the
@@ -309,7 +318,7 @@ class Data(BaseResolweResource):
             destination_file_path,
         )
 
-    def stdout(self):
+    def stdout(self) -> str:
         """Return process standard output (stdout.txt file content).
 
         Fetch stdout.txt file from the corresponding Data object and return the
@@ -322,6 +331,7 @@ class Data(BaseResolweResource):
             raise ValueError("stdout.txt file is not available for workflows.")
         output = b""
         url = urljoin(self.resolwe.url, "data/{}/stdout.txt".format(self.id))
+        assert self.resolwe.session is not None
         response = self.resolwe.session.get(url, stream=True, auth=self.resolwe.auth)
         if not response.ok and self.status in ["UP", "RE", "WT", "PP", "DR"]:
             raise ValueError(
@@ -336,13 +346,13 @@ class Data(BaseResolweResource):
         return output.decode("utf-8")
 
     @assert_object_exists
-    def duplicate(self):
+    def duplicate(self) -> "Data":
         """Duplicate (make copy of) ``data`` object.
 
         :return: Duplicated data object
         """
         task_data = self.api().duplicate.post({"ids": [self.id]})
         background_task = BackgroundTask(
-            resolwe=self.resolwe, **task_data, initial_data_source=DataSource.SERVER
+            resolwe=self.resolwe, initial_data_source=DataSource.SERVER, **task_data
         )
         return self.resolwe.data.get(id__in=background_task.result())
