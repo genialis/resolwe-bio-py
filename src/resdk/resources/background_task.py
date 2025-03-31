@@ -2,11 +2,15 @@
 
 import logging
 from time import sleep, time
+from typing import TYPE_CHECKING, Any
 
 from resdk.exceptions import ResolweServerError
 
 from .base import BaseResource
 from .fields import DateTimeField, JSONField, StringField
+
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
 
 
 class BackgroundTask(BaseResource):
@@ -25,7 +29,7 @@ class BackgroundTask(BaseResource):
     description = StringField()
     output = JSONField()
 
-    def __init__(self, resolwe, **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
         super().__init__(resolwe, **model_data)
@@ -54,7 +58,7 @@ class BackgroundTask(BaseResource):
             raise RuntimeError(f"Waiting for taks {self.id} timeout.")
         return self
 
-    def result(self, timeout: float = 0, final_statuses=["OK"]):
+    def result(self, timeout: float = 0, final_statuses: list[str] = ["OK"]) -> Any:
         """Wait fot the background tast to finish and return its result.
 
         :attr timeout: how many seconds to wait for task to finish (0 to wait forever).

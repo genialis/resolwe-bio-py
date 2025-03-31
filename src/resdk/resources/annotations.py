@@ -32,7 +32,7 @@ class AnnotationGroup(BaseResource):
     label = StringField()
     sort_order = IntegerField()
 
-    def __init__(self, resolwe: "Resolwe", **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize the instance.
 
         :param resolwe: Resolwe instance
@@ -41,7 +41,7 @@ class AnnotationGroup(BaseResource):
         self.logger = logging.getLogger(__name__)
         super().__init__(resolwe, **model_data)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return user friendly string representation."""
         return f"AnnotationGroup <name: {self.name}>"
 
@@ -62,7 +62,7 @@ class AnnotationField(BaseResource):
     required = BooleanField()
     version = StringField()
 
-    def __init__(self, resolwe: "Resolwe", **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize the instance.
 
         :param resolwe: Resolwe instance
@@ -71,11 +71,11 @@ class AnnotationField(BaseResource):
         self.logger = logging.getLogger(__name__)
         super().__init__(resolwe, **model_data)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return user friendly string representation."""
         return f"AnnotationField <path: {self.group.name}.{self.name}>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return full path of the annotation field."""
         return f"{self.group.name}.{self.name}"
 
@@ -98,7 +98,7 @@ class AnnotationValue(BaseResource):
     value = BaseField(access_type=FieldAccessType.WRITABLE)
     modified = DateTimeField(server_field_name="created")
 
-    def __init__(self, resolwe: "Resolwe", **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize the instance.
 
         :param resolwe: Resolwe instance
@@ -107,6 +107,6 @@ class AnnotationValue(BaseResource):
         self.logger = logging.getLogger(__name__)
         super().__init__(resolwe, **model_data)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Format resource name."""
         return f"AnnotationValue <path: {self.field.group.name}.{self.field.name}, value: '{self.value}'>"

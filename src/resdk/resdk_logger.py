@@ -69,6 +69,8 @@ only when they are caught and not re-raised."
 
 import logging
 import sys
+from types import TracebackType
+from typing import Optional
 
 LEVEL_MAP = {
     "DEBUG": logging.DEBUG,
@@ -101,7 +103,9 @@ FORMATTER1 = logging.Formatter(fmt="%(message)s")
 STDOUT_HANDLER.setFormatter(FORMATTER1)
 
 
-def _configure_handler(handler, is_on=None, level=None):
+def _configure_handler(
+    handler, is_on: Optional[bool] = None, level: Optional[int] = None
+):
     """
     Configure handlers.
 
@@ -134,7 +138,7 @@ def _configure_handler(handler, is_on=None, level=None):
             raise ValueError("Wrong value of 'level' parameter.")
 
 
-def log_to_stdout(is_on=None, level=None):
+def log_to_stdout(is_on: Optional[bool] = None, level: Optional[int] = None):
     """Configure logging to stdout.
 
     :param is_on: If True, log to standard output
@@ -147,7 +151,7 @@ def log_to_stdout(is_on=None, level=None):
     _configure_handler(STDOUT_HANDLER, is_on=is_on, level=level)
 
 
-def start_logging(logging_level=logging.INFO):
+def start_logging(logging_level: int = logging.INFO):
     """Start logging resdk with the default configuration.
 
     :param logging_level: logging threshold level - integer in [0-50]
@@ -166,7 +170,11 @@ def start_logging(logging_level=logging.INFO):
     log_to_stdout(is_on=STDOUT_LOG_ON, level=logging_level or STDOUT_LOG_LEVEL)
 
 
-def _log_all_uncaught_exceptions(exc_type, exc_value, exc_traceback):
+def _log_all_uncaught_exceptions(
+    exc_type: type[BaseException],
+    exc_value: BaseException,
+    exc_traceback: Optional[TracebackType],
+):
     """Log all uncaught exceptions in non-interactive mode.
 
     All python exceptions are handled by function, stored in

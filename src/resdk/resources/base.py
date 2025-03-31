@@ -3,7 +3,7 @@
 import copy
 import logging
 import operator
-from typing import Iterable
+from typing import TYPE_CHECKING, Any, Iterable, Optional
 
 from ..constants import ALL_PERMISSIONS
 from ..utils.decorators import assert_object_exists
@@ -18,6 +18,9 @@ from .fields import (
 )
 from .permissions import PermissionsManager
 
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
+
 
 class BaseResource:
     """Abstract resource.
@@ -31,10 +34,10 @@ class BaseResource:
 
     """
 
-    endpoint = None
-    query_endpoint = None
+    endpoint: Optional[str] = None
+    query_endpoint: Optional[str] = None
     query_method = "GET"
-    full_search_paramater = None
+    full_search_paramater: Optional[str] = None
     delete_warning_single = "Do you really want to delete {}?[yN]"
     delete_warning_bulk = "Do you really want to delete {} objects?[yN]"
 
@@ -42,7 +45,12 @@ class BaseResource:
 
     all_permissions = []  # override this in subclass
 
-    def __init__(self, resolwe, initial_data_source=DataSource.USER, **model_data):
+    def __init__(
+        self,
+        resolwe: "Resolwe",
+        initial_data_source: DataSource = DataSource.USER,
+        **model_data: dict,
+    ):
         """Initialize attributes."""
         self._resource_fields = self._find_fields()
         self._original_values = {}
@@ -54,7 +62,7 @@ class BaseResource:
             self._update_fields(model_data, data_source=initial_data_source)
 
     @classmethod
-    def _find_fields(cls):
+    def _find_fields(cls: type["BaseResource"]) -> dict:
         """Find all fields in the class."""
         fields = {
             variable_name: variable_value
@@ -67,7 +75,9 @@ class BaseResource:
             fields = {"id": fields.pop("id")} | fields
         return fields
 
-    def _get_fields(self, access_types: Iterable[FieldAccessType]):
+    def _get_fields(
+        self, access_types: Iterable[FieldAccessType]
+    ) -> dict[str, BaseField]:
         """Return fields with given access type."""
         return {
             field_name: field
@@ -75,7 +85,7 @@ class BaseResource:
             if field._access_type in access_types
         }
 
-    def _get_required_fields(self):
+    def _get_required_fields(self) -> dict[str, BaseField]:
         """Return required fields."""
         return {
             field_name: field
@@ -84,7 +94,12 @@ class BaseResource:
         }
 
     @classmethod
-    def fetch_object(cls, resolwe, id=None, slug=None):
+    def fetch_object(
+        cls: type["BaseResource"],
+        resolwe: "Resolwe",
+        id: Optional[int] = None,
+        slug: Optional[str] = None,
+    ) -> "BaseResource":
         """Return resource instance that is uniquely defined by identifier."""
         if (id is None and slug is None) or (id and slug):
             raise ValueError("One and only one of id or slug must be given")
@@ -94,8 +109,11 @@ class BaseResource:
             return query.get(id=id)
         return query.get(slug=slug)
 
-    def _check_required_fields(self, payload):
-        """Check if all required fields are present in the payload."""
+    def _check_required_fields(self, payload: dict[str, Any]):
+        """Check if all required fields are present in the payload.
+
+        :raise ValueError: If any required field is missing.
+        """
         required_fields = self._get_required_fields()
         for field in required_fields.values():
             if field.server_field not in payload:
@@ -103,8 +121,11 @@ class BaseResource:
                     f"Required field '{field.server_field}' not in payload."
                 )
 
-    def _map_user_to_server_fields(self, payload):
-        """Map user fields to server fields."""
+    def _map_user_to_server_fields(self, payload: dict[str, Any]):
+        """Map user fields to server fields.
+
+        The payload dictionary is modified in place.
+        """
         for original, destination in {
             field_name: field.server_field
             for field_name, field in self._resource_fields.items()
@@ -113,7 +134,9 @@ class BaseResource:
             if original in payload:
                 payload[destination] = payload.pop(original)
 
-    def _update_fields(self, payload, data_source=DataSource.USER):
+    def _update_fields(
+        self, payload: dict[str, Any], data_source: DataSource = DataSource.USER
+    ):
         """Update fields of the local resource based on the server values."""
         try:
             # Set the loading data to indicate read-only fields can be set.
@@ -202,7 +225,7 @@ class BaseResource:
             ).wait()
             return True
 
-    def __eq__(self, obj):
+    def __eq__(self, obj: Any) -> bool:
         """Evaluate if objects are the same.
 
         Two object are considered the same if they are located on the same server, are
@@ -227,7 +250,7 @@ class BaseResolweResource(BaseResource):
 
     """
 
-    _permissions = None
+    _permissions: Optional[PermissionsManager] = None
 
     current_user_permissions = BaseField()
     contributor = DictResourceField(resource_class_name="User")
@@ -245,7 +268,7 @@ class BaseResolweResource(BaseResource):
 
     @property
     @assert_object_exists
-    def permissions(self):
+    def permissions(self) -> PermissionsManager:
         """Permissions."""
         if not self._permissions:
             self._permissions = PermissionsManager(
@@ -259,7 +282,7 @@ class BaseResolweResource(BaseResource):
         self.permissions.clear_cache()
         super().update()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Format resource name."""
         return "{} <id: {}, slug: '{}', name: '{}'>".format(
             self.__class__.__name__, self.id, self.slug, self.name

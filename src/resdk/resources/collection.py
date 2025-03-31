@@ -1,6 +1,7 @@
 """Collection resources."""
 
 import logging
+from typing import TYPE_CHECKING, Iterable, Optional
 from urllib.parse import urljoin
 
 from resdk.shortcuts.collection import CollectionRelationsMixin
@@ -8,6 +9,7 @@ from resdk.shortcuts.collection import CollectionRelationsMixin
 from ..utils.decorators import assert_object_exists
 from .background_task import BackgroundTask
 from .base import BaseResolweResource
+from .data import Data
 from .fields import (
     BooleanField,
     DataSource,
@@ -19,6 +21,9 @@ from .fields import (
     StringField,
 )
 from .utils import _get_billing_account_id
+
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
 
 
 class BaseCollection(BaseResolweResource):
@@ -54,14 +59,14 @@ class BaseCollection(BaseResolweResource):
     settings = DictField(access_type=FieldAccessType.WRITABLE)
     tags = StringField(access_type=FieldAccessType.WRITABLE, many=True)
 
-    def __init__(self, resolwe, **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         super().__init__(resolwe, **model_data)
 
         self.logger = logging.getLogger(__name__)
 
     @property
-    def data(self):
+    def data(self) -> Iterable["Data"]:
         """Return list of attached Data objects."""
         raise NotImplementedError("This should be implemented in subclass")
 
@@ -69,17 +74,13 @@ class BaseCollection(BaseResolweResource):
         """Clear cache and update resource fields from the server."""
         super().update()
 
-    def data_types(self):
-        """Return a list of data types (process_type).
-
-        :rtype: List
-
-        """
+    def data_types(self) -> list[str]:
+        """Return a list of data types (process_type)."""
         return sorted({datum.process.type for datum in self.data})
 
-    def files(self, file_name=None, field_name=None):
+    def files(self, file_name: Optional[str] = None, field_name: Optional[str] = None):
         """Return list of files in resource."""
-        file_list = []
+        file_list: list[str] = []
         for data in self.data:
             file_list.extend(
                 fname
@@ -88,19 +89,16 @@ class BaseCollection(BaseResolweResource):
 
         return file_list
 
-    def download(self, file_name=None, field_name=None, download_dir=None):
+    def download(
+        self,
+        file_name: Optional[str] = None,
+        field_name: Optional[str] = None,
+        download_dir: Optional[str] = None,
+    ):
         """Download output files of associated Data objects.
 
         Download files from the Resolwe server to the download
         directory (defaults to the current working directory).
-
-        :param file_name: name of file
-        :type file_name: string
-        :param field_name: field name
-        :type field_name: string
-        :param download_dir: download path
-        :type download_dir: string
-        :rtype: None
 
         Collections can contain multiple Data objects and Data objects
         can contain multiple files. All files are downloaded by default,
@@ -108,7 +106,6 @@ class BaseCollection(BaseResolweResource):
 
         * re.collection.get(42).download(file_name='alignment7.bam')
         * re.collection.get(42).download(data_type='bam')
-
         """
         files = []
 
@@ -137,20 +134,13 @@ class Collection(CollectionRelationsMixin, BaseCollection):
     samples = QueryRelatedField("Sample")
     relations = QueryRelatedField("Relation")
 
-    def __init__(self, resolwe, **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         super().__init__(resolwe, **model_data)
         self.logger = logging.getLogger(__name__)
 
-    def update(self):
-        """Clear cache and update resource fields from the server."""
-        self._samples = None
-        self._relations = None
-
-        super().update()
-
     @assert_object_exists
-    def duplicate(self):
+    def duplicate(self) -> "Collection":
         """Duplicate (make copy of) ``collection`` object.
 
         :return: Duplicated collection
@@ -162,7 +152,7 @@ class Collection(CollectionRelationsMixin, BaseCollection):
         return self.resolwe.collection.get(id__in=background_task.result())
 
     @assert_object_exists
-    def assign_to_billing_account(self, billing_account_name):
+    def assign_to_billing_account(self, billing_account_name: str):
         """Assign given collection to a billing account."""
         billing_account_id = _get_billing_account_id(self.resolwe, billing_account_name)
 

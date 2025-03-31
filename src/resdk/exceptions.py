@@ -10,6 +10,8 @@ Custom ReSDK exceptions.
 
 """
 
+from typing import Callable
+
 from slumber.exceptions import SlumberHttpBaseException
 
 
@@ -21,7 +23,7 @@ class ResolweServerError(Exception):
     """Error response from the Resolwe API."""
 
 
-def handle_http_exception(func):
+def handle_http_exception(func: Callable) -> Callable:
     """Handle slumber errors in more verbose way."""
 
     def wrapper(*args, **kwargs):

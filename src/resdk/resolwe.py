@@ -21,7 +21,7 @@ from collections import defaultdict
 from contextlib import suppress
 from importlib.metadata import version as package_version
 from pathlib import Path
-from typing import Optional, TypedDict, Union
+from typing import Iterable, Optional, TypedDict, Union
 from urllib.parse import urlencode, urljoin, urlparse
 
 import requests
@@ -167,7 +167,12 @@ class Resolwe:
 
     session = None
 
-    def __init__(self, username=None, password=None, url=None):
+    def __init__(
+        self,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        url: Optional[str] = None,
+    ):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
         self.session = requests.Session()
@@ -223,7 +228,11 @@ class Resolwe:
             raise ResolweServerError("Unable to read the server version.")
         return response.json()
 
-    def _validate_url(self, url):
+    def _validate_url(self, url: str):
+        """Validate server URL.
+
+        :raises ValueError: if the URL is not valid or the server is unreachable.
+        """
         if not re.match(r"https?://", url):
             raise ValueError("Server url must start with http(s)://")
 
@@ -265,8 +274,8 @@ class Resolwe:
             logged_in_user = self.user.get(current_only=True)
             self.auth.username = logged_in_user.email
 
-    def login(self, username=None, password=None):
-        """Interactive login.
+    def login(self, username: Optional[str] = None, password: Optional[str] = None):
+        """Perform the interactive login.
 
         If only username is given prompt the user for password via shell.
         If username is not given, prompt for interactive login.
@@ -275,8 +284,11 @@ class Resolwe:
             password = getpass.getpass("Password: ")
         self._login(username=username, password=password, interactive=True)
 
-    def get_query_by_resource(self, resource):
-        """Get ResolweQuery for a given resource."""
+    def get_query_by_resource(self, resource: type[BaseResource]) -> ResolweQuery:
+        """Get ResolweQuery for a given resource.
+
+        :raises ValueError: if the resource is not a subclass of BaseResource.
+        """
         if isinstance(resource, BaseResource):
             resource = resource.__class__
         elif not issubclass(resource, BaseResource):
@@ -286,7 +298,7 @@ class Resolwe:
 
         return getattr(self, self.resource_query_mapping.get(resource))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return string representation of the current object."""
         if self.auth.username:
             return "Resolwe <url: {}, username: {}>".format(
@@ -294,7 +306,7 @@ class Resolwe:
             )
         return "Resolwe <url: {}>".format(self.url)
 
-    def _process_file_field(self, path):
+    def _process_file_field(self, path: Union[str, Path, dict]) -> dict:
         """Process file field and return it in resolwe-specific format.
 
         Upload referenced file if it is stored locally and return
@@ -329,14 +341,14 @@ class Resolwe:
             "file_temp": file_temp,
         }
 
-    def _get_process(self, slug=None):
+    def _get_process(self, slug: Optional[str] = None) -> Process:
         """Return process with given slug.
 
         Raise error if process doesn't exist or more than one is returned.
         """
         return self.process.get(slug=slug)
 
-    def _process_inputs(self, inputs, process):
+    def _process_inputs(self, inputs: dict, process: Process) -> dict:
         """Process input fields.
 
         Processing includes:
@@ -403,14 +415,14 @@ class Resolwe:
 
     def run(
         self,
-        slug=None,
-        input={},
-        descriptor=None,
-        descriptor_schema=None,
-        collection=None,
-        data_name="",
-        process_resources=None,
-    ):
+        slug: Optional[str] = None,
+        input: dict = {},
+        descriptor: Optional[dict] = None,
+        descriptor_schema: Optional[str] = None,
+        collection: Optional[Collection] = None,
+        data_name: str = "",
+        process_resources: Optional[dict] = None,
+    ) -> Data:
         """Run process and return the corresponding Data object.
 
         1. Upload files referenced in inputs
@@ -467,7 +479,7 @@ class Resolwe:
         model_data = self.api.data.post(data)
         return Data(resolwe=self, **model_data, initial_data_source=DataSource.SERVER)
 
-    def get_or_run(self, slug=None, input={}):
+    def get_or_run(self, slug: Optional[str] = None, input: dict = {}):
         """Return existing object if found, otherwise create new one.
 
         :param str slug: Process slug (human readable unique identifier)
@@ -486,7 +498,7 @@ class Resolwe:
 
     def _download_files(
         self,
-        files: list[Union[str, Path]],
+        files: Iterable[Union[str, Path]],
         download_dir: Union[str, None] = None,
         show_progress: bool = True,
     ):
@@ -702,7 +714,7 @@ Alternatively, you may visit the following URL which will autofill the code upon
 
         return cookie_dict
 
-    def __call__(self, request):
+    def __call__(self, request: requests.Request) -> requests.Request:
         """Set request headers."""
         if "csrftoken" in self.cookies:
             request.headers["X-CSRFToken"] = self.cookies["csrftoken"]
