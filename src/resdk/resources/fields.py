@@ -510,6 +510,7 @@ class IdResourceField(DictResourceField):
         return super().to_python(value, instance)
 
     def __set__(self, instance, value):
+        """Handle the case when the value is an int or a query."""
 
         from resdk.query import ResolweQuery
 

@@ -11,6 +11,7 @@ from .fields import (
     DateTimeField,
     DictResourceField,
     FieldAccessType,
+    IdResourceField,
     IntegerField,
     StringField,
 )
@@ -116,7 +117,6 @@ class PredictionField(BaseResource):
     inputs = DictResourceField(
         resource_class_name="PredictionField",
         access_type=FieldAccessType.WRITABLE,
-        required=True,
         many=True,
     )
     label = StringField(access_type=FieldAccessType.WRITABLE)
@@ -147,12 +147,12 @@ class PredictionValue(BaseResource):
     endpoint = "prediction_value"
 
     label = StringField()
-    field = DictResourceField(
+    field = IdResourceField(
         resource_class_name="PredictionField",
         required=True,
         access_type=FieldAccessType.UPDATE_PROTECTED,
     )
-    sample = DictResourceField(
+    sample = IdResourceField(
         resource_class_name="Sample",
         required=True,
         access_type=FieldAccessType.UPDATE_PROTECTED,
