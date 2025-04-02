@@ -74,7 +74,7 @@ class BaseResdkDocsFunctionalTest(BaseResdkFunctionalTest):
         reads = res.run(
             slug="upload-fastq-single",
             input={"src": os.path.join(TEST_FILES_DIR, "reads.fastq.gz")},
-            collection=self.collection.id,
+            collection=self.collection,
         )
         self.set_slug(reads, self.reads_slug)
         self.set_slug(reads.sample, self.sample_slug)
@@ -89,7 +89,7 @@ class BaseResdkDocsFunctionalTest(BaseResdkFunctionalTest):
                 "species": "Dictyostelium discoideum",
                 "build": "dd-05-2009",
             },
-            collection=self.collection.id,
+            collection=self.collection,
         )
         self.set_slug(genome, slug)
 
@@ -104,7 +104,7 @@ class BaseResdkDocsFunctionalTest(BaseResdkFunctionalTest):
                 "species": "Dictyostelium discoideum",
                 "build": "dd-05-2009",
             },
-            collection=self.collection.id,
+            collection=self.collection,
         )
         self.set_slug(annotation, self.annotation_slug)
 
@@ -116,7 +116,7 @@ class BaseResdkDocsFunctionalTest(BaseResdkFunctionalTest):
             input={
                 "ref_seq": fasta,
             },
-            collection=self.collection.id,
+            collection=self.collection,
         )
         self.set_slug(genome_index, slug)
 
