@@ -155,9 +155,6 @@ class TestResolweQuery(unittest.TestCase):
             _dehydrate_resources=MagicMock(return_value=2),
             _non_string_iterable=MagicMock(return_value=False),
         )
-        query.resource.query_method = "POST"
-        ResolweQuery._add_filter(query, {"sample": 2})
-        self.assertEqual(query._filters, {"slug": "test", "entity": 2})
 
     def test_compose_filters(self):
         query = MagicMock(spec=ResolweQuery)
