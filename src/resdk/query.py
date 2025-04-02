@@ -19,7 +19,7 @@ import tqdm
 
 from resdk.resources import DescriptorSchema, Process
 from resdk.resources.base import BaseResource
-from resdk.resources.fields import DataSource, FieldStatus
+from resdk.resources.fields import DataSource, DictResourceField, FieldStatus
 
 if TYPE_CHECKING:
     from resdk import Resolwe
@@ -184,6 +184,23 @@ class ResolweQuery:
     def _add_filter(self, filter_: dict):
         """Add filtering parameters."""
         for key, value in filter_.items():
+            # Make best-effort to rename fields to server fields.
+            resource = self.resource
+            filter_parts = key.split("__")
+            for part_num in range(len(filter_parts)):
+                resource_fields = resource._find_fields()
+                part = filter_parts[part_num]
+                # Bail out, we lost track of the book keeping.
+                if part not in resource_fields:
+                    break
+                field = resource_fields[part]
+                filter_parts[part_num] = resource_fields[part].server_field
+                # Continue only if the field represents a resource.
+                if not isinstance(field, DictResourceField):
+                    break
+                resource = field.Resource
+
+            key = "__".join(filter_parts)
             value = self._dehydrate_resources(value)
             if self._non_string_iterable(value):
                 value = ",".join(map(str, value))
