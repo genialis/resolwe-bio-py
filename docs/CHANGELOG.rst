@@ -4,6 +4,15 @@ Change Log
 
 All notable changes to this project are documented in this file.
 
+==========
+Unreleased
+==========
+
+Added
+-----
+- Add ``prediction_group`` to ``Resolwe`` object
+
+
 ===================
 22.0.0 - 2025-03-28
 ===================
