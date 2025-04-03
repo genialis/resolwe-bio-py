@@ -86,9 +86,9 @@ class PredictionGroup(BaseResource):
     # initialized.
     endpoint = "prediction_group"
 
-    name = StringField()
-    label = StringField()
-    sort_order = IntegerField()
+    name = StringField(access_type=FieldAccessType.UPDATE_PROTECTED)
+    label = StringField(access_type=FieldAccessType.WRITABLE)
+    sort_order = IntegerField(access_type=FieldAccessType.WRITABLE)
 
     def __init__(self, resolwe: "Resolwe", **model_data):
         """Initialize the instance.
