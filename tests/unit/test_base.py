@@ -57,7 +57,8 @@ class TestBaseResolweResource(unittest.TestCase):
         base_resource.UPDATE_PROTECTED_FIELDS = ("update_protected",)
         base_resource.READ_ONLY_FIELDS = ("read_only",)
         self.assertEqual(
-            base_resource.fields(), ("read_only", "update_protected", "writable")
+            base_resource._get_resource_fields(),
+            ("read_only", "update_protected", "writable"),
         )
 
     def test_dehydrate_resources(self):
@@ -107,7 +108,7 @@ class TestBaseMethods(unittest.TestCase):
     @patch("resdk.resources.base.BaseResolweResource", spec=True)
     def test_update_fields(self, base_mock, setattr_mock):
         fields = {"id": 1, "slug": "testobj"}
-        base_mock.fields.return_value = ("id", "slug")
+        base_mock._get_resource_fields.return_value = ("id", "slug")
         BaseResolweResource._update_fields(base_mock, fields)
         setattr_mock.assert_has_calls(
             [call(base_mock, "id", 1), call(base_mock, "slug", "testobj")],
@@ -130,7 +131,7 @@ class TestBaseMethods(unittest.TestCase):
         base_mock.READ_ONLY_FIELDS = ("id", "read_only_dict")
         base_mock.UPDATE_PROTECTED_FIELDS = ()
         base_mock.WRITABLE_FIELDS = ("slug",)
-        base_mock.fields.return_value = ("id", "slug", "read_only_dict")
+        base_mock._get_resource_fields.return_value = ("id", "slug", "read_only_dict")
 
         base_mock.read_only_dict = {"change": "change-not-allowed"}
 
@@ -146,7 +147,11 @@ class TestBaseMethods(unittest.TestCase):
         base_mock.READ_ONLY_FIELDS = ("id",)
         base_mock.UPDATE_PROTECTED_FIELDS = ("update_protected_dict",)
         base_mock.WRITABLE_FIELDS = ("slug",)
-        base_mock.fields.return_value = ("id", "slug", "update_protected_dict")
+        base_mock._get_resource_fields.return_value = (
+            "id",
+            "slug",
+            "update_protected_dict",
+        )
 
         base_mock.update_protected_dict = {"create": "create-allowed"}
         base_mock.api = MagicMock(
@@ -193,7 +198,7 @@ class TestBaseMethods(unittest.TestCase):
         base_mock.READ_ONLY_FIELDS = ("id", "read_only_dict")
         base_mock.UPDATE_PROTECTED_FIELDS = ()
         base_mock.WRITABLE_FIELDS = ("slug",)
-        base_mock.fields.return_value = ("id", "slug", "read_only_dict")
+        base_mock._get_resource_fields.return_value = ("id", "slug", "read_only_dict")
         read_only_dict = {}
         BaseResolweResource._update_fields(
             base_mock, {"id": 1, "slug": "test", "read_only_dict": read_only_dict}
@@ -209,7 +214,11 @@ class TestBaseMethods(unittest.TestCase):
         base_mock.READ_ONLY_FIELDS = ("id",)
         base_mock.UPDATE_PROTECTED_FIELDS = ("update_protected_dict",)
         base_mock.WRITABLE_FIELDS = ("slug",)
-        base_mock.fields.return_value = ("id", "slug", "update_protected_dict")
+        base_mock._get_resource_fields.return_value = (
+            "id",
+            "slug",
+            "update_protected_dict",
+        )
         update_protected_dict = {}
         BaseResolweResource._update_fields(
             base_mock,
@@ -251,7 +260,7 @@ class TestAttributesDefined(unittest.TestCase):
 
         for class_ in classes:
             resource = class_(resolwe)
-            for field in resource.fields():
+            for field in resource._get_resource_fields():
                 # Some fields are properties that can only be accessed when
                 # object has id != None. Otherwise they return ValueError.
                 # We therefore skip these ValueError's
