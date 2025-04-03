@@ -6,7 +6,7 @@ Supports uploading to S3 bucket and to Genialis server.
 import uuid
 from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 from urllib.parse import urljoin
 
 import boto3
@@ -64,14 +64,14 @@ class Uploader:
             UploadType.S3: self._upload_s3,
         }
         self._boto_session: Optional[boto3.Session] = None
-        self._upload_config: Optional[Dict] = None
+        self._upload_config: Optional[dict] = None
 
     def invalidate_cache(self):
         """Remove local cache for upload configuration."""
         self._upload_config = None
 
     @property
-    def upload_config(self) -> Dict:
+    def upload_config(self) -> dict:
         """Get the upload configuration.
 
         If configuration can not be read from the server the default
@@ -126,8 +126,8 @@ class Uploader:
         )
 
     def _refresh_credentials_metadata(
-        self, credentials: Optional[Dict] = None
-    ) -> Dict[str, str]:
+        self, credentials: Optional[dict] = None
+    ) -> dict[str, str]:
         """Create dictionary necessary to refresh credentials.
 
         The credentials (if not given) are obtained by querying the upload

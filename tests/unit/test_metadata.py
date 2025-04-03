@@ -5,9 +5,11 @@ Unit tests for Metadata class.
 import unittest
 
 import pandas as pd
-from mock import MagicMock
+from mock import MagicMock, NonCallableMagicMock
 
-from resdk.resources import Collection, Metadata, Sample
+from resdk.resources import Collection, Metadata, Process, Sample
+
+from .utils import server_resource
 
 
 class TestMetadata(unittest.TestCase):
@@ -15,15 +17,21 @@ class TestMetadata(unittest.TestCase):
         self.res = MagicMock()
 
         # Process
-        self.process = MagicMock(slug="upload-metadata")
-        self.process_unique = MagicMock(slug="upload-metadata-unique")
+        self.process = NonCallableMagicMock(spec=Process, slug="upload-metadata")
+        self.process_unique = NonCallableMagicMock(
+            spec=Process, slug="upload-metadata-unique"
+        )
 
         # Samples
-        self.sample1 = Sample(resolwe=self.res, id=10, slug="s1", name="S1")
-        self.sample2 = Sample(resolwe=self.res, id=11, slug="s2", name="S2")
+        self.sample1 = server_resource(
+            Sample, resolwe=self.res, id=10, slug="s1", name="S1"
+        )
+        self.sample2 = server_resource(
+            Sample, resolwe=self.res, id=11, slug="s2", name="S2"
+        )
 
         # Collection
-        self.collection = Collection(resolwe=self.res, id=5)
+        self.collection = server_resource(Collection, resolwe=self.res, id=5)
         self.collection.samples.filter.return_value = [self.sample1, self.sample2]
 
         # df
@@ -35,10 +43,12 @@ class TestMetadata(unittest.TestCase):
         )
 
         # Data
-        self.metadata1 = Metadata(
-            resolwe=self.res, id=100, process=self.process, df=self.df
+        self.metadata1 = server_resource(
+            Metadata, resolwe=self.res, id=100, process=self.process, df=self.df
         )
-        self.metadata2 = Metadata(resolwe=self.res, id=101, process=self.process_unique)
+        self.metadata2 = server_resource(
+            Metadata, resolwe=self.res, id=101, process=self.process_unique
+        )
         self.res.metadata.filter = MagicMock(
             return_value=[self.metadata1, self.metadata2]
         )

@@ -1,6 +1,7 @@
 """Collection resources."""
 
 import logging
+from typing import TYPE_CHECKING, Iterable, Optional
 from urllib.parse import urljoin
 
 from resdk.shortcuts.collection import CollectionRelationsMixin
@@ -8,8 +9,21 @@ from resdk.shortcuts.collection import CollectionRelationsMixin
 from ..utils.decorators import assert_object_exists
 from .background_task import BackgroundTask
 from .base import BaseResolweResource
-from .descriptor import DescriptorSchema
+from .data import Data
+from .fields import (
+    BooleanField,
+    DataSource,
+    DateTimeField,
+    DictField,
+    DictResourceField,
+    FieldAccessType,
+    QueryRelatedField,
+    StringField,
+)
 from .utils import _get_billing_account_id
+
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
 
 
 class BaseCollection(BaseResolweResource):
@@ -32,75 +46,41 @@ class BaseCollection(BaseResolweResource):
         "Do you really want to delete {} objects and all of their content?[yN]"
     )
 
-    READ_ONLY_FIELDS = BaseResolweResource.READ_ONLY_FIELDS + (
-        "descriptor_dirty",
-        "duplicated",
-    )
-    WRITABLE_FIELDS = BaseResolweResource.WRITABLE_FIELDS + (
-        "description",
-        "descriptor",
-        "descriptor_schema",
-        "settings",
-        "tags",
-    )
+    desriptor_dirty = BooleanField()
+    duplicated = DateTimeField()
 
-    def __init__(self, resolwe, **model_data):
+    description = StringField(access_type=FieldAccessType.WRITABLE)
+    descriptor = DictField(access_type=FieldAccessType.WRITABLE)
+    descriptor_schema = DictResourceField(
+        resource_class_name="DescriptorSchema",
+        property_name="slug",
+        access_type=FieldAccessType.WRITABLE,
+    )
+    settings = DictField(access_type=FieldAccessType.WRITABLE)
+    tags = StringField(access_type=FieldAccessType.WRITABLE, many=True)
+
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
-        self.logger = logging.getLogger(__name__)
-
-        #: list of Data objects in collection (lazy loaded)
-        self._data = None
-        #: ``DescriptorSchema`` of a resource object (lazy loaded)
-        self._descriptor_schema = None
-
-        #: description
-        self.description = None
-        #: descriptor
-        self.descriptor = None
-        #: descriptor_dirty
-        self.descriptor_dirty = None
-        #: duplicatied
-        self.duplicated = None
-        #: settings
-        self.settings = None
-        #: tags
-        self.tags = None
-
         super().__init__(resolwe, **model_data)
 
+        self.logger = logging.getLogger(__name__)
+
     @property
-    def data(self):
+    def data(self) -> Iterable["Data"]:
         """Return list of attached Data objects."""
         raise NotImplementedError("This should be implemented in subclass")
 
-    @property
-    def descriptor_schema(self):
-        """Descriptor schema."""
-        return self._descriptor_schema
-
-    @descriptor_schema.setter
-    def descriptor_schema(self, payload):
-        """Set descriptor schema."""
-        self._resource_setter(payload, DescriptorSchema, "_descriptor_schema")
-
     def update(self):
         """Clear cache and update resource fields from the server."""
-        self._data = None
-        self._descriptor_schema = None
-
         super().update()
 
-    def data_types(self):
-        """Return a list of data types (process_type).
-
-        :rtype: List
-
-        """
+    def data_types(self) -> list[str]:
+        """Return a list of data types (process_type)."""
         return sorted({datum.process.type for datum in self.data})
 
-    def files(self, file_name=None, field_name=None):
+    def files(self, file_name: Optional[str] = None, field_name: Optional[str] = None):
         """Return list of files in resource."""
-        file_list = []
+        file_list: list[str] = []
         for data in self.data:
             file_list.extend(
                 fname
@@ -109,19 +89,16 @@ class BaseCollection(BaseResolweResource):
 
         return file_list
 
-    def download(self, file_name=None, field_name=None, download_dir=None):
+    def download(
+        self,
+        file_name: Optional[str] = None,
+        field_name: Optional[str] = None,
+        download_dir: Optional[str] = None,
+    ):
         """Download output files of associated Data objects.
 
         Download files from the Resolwe server to the download
         directory (defaults to the current working directory).
-
-        :param file_name: name of file
-        :type file_name: string
-        :param field_name: field name
-        :type field_name: string
-        :param download_dir: download path
-        :type download_dir: string
-        :rtype: None
 
         Collections can contain multiple Data objects and Data objects
         can contain multiple files. All files are downloaded by default,
@@ -129,7 +106,6 @@ class BaseCollection(BaseResolweResource):
 
         * re.collection.get(42).download(file_name='alignment7.bam')
         * re.collection.get(42).download(data_type='bam')
-
         """
         files = []
 
@@ -154,63 +130,29 @@ class Collection(CollectionRelationsMixin, BaseCollection):
 
     endpoint = "collection"
 
-    def __init__(self, resolwe, **model_data):
+    data = QueryRelatedField("Data")
+    samples = QueryRelatedField("Sample")
+    relations = QueryRelatedField("Relation")
+
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
+        super().__init__(resolwe, **model_data)
         self.logger = logging.getLogger(__name__)
 
-        #: list of ``Sample`` objects in ``Collection`` (lazy loaded)
-        self._samples = None
-        #: list of ``Relation`` objects in ``Collection`` (lazy loaded)
-        self._relations = None
-
-        super().__init__(resolwe, **model_data)
-
-    def update(self):
-        """Clear cache and update resource fields from the server."""
-        self._samples = None
-        self._relations = None
-
-        super().update()
-
-    @property
     @assert_object_exists
-    def data(self):
-        """Return list of data objects on collection."""
-        if self._data is None:
-            self._data = self.resolwe.data.filter(collection=self.id)
-
-        return self._data
-
-    @property
-    @assert_object_exists
-    def samples(self):
-        """Return list of samples on collection."""
-        if self._samples is None:
-            self._samples = self.resolwe.sample.filter(collection=self.id)
-
-        return self._samples
-
-    @property
-    @assert_object_exists
-    def relations(self):
-        """Return list of data objects on collection."""
-        if self._relations is None:
-            self._relations = self.resolwe.relation.filter(collection=self.id)
-
-        return self._relations
-
-    @assert_object_exists
-    def duplicate(self):
+    def duplicate(self) -> "Collection":
         """Duplicate (make copy of) ``collection`` object.
 
         :return: Duplicated collection
         """
         task_data = self.api().duplicate.post({"ids": [self.id]})
-        background_task = BackgroundTask(resolwe=self.resolwe, **task_data)
+        background_task = BackgroundTask(
+            resolwe=self.resolwe, **task_data, initial_data_source=DataSource.SERVER
+        )
         return self.resolwe.collection.get(id__in=background_task.result())
 
     @assert_object_exists
-    def assign_to_billing_account(self, billing_account_name):
+    def assign_to_billing_account(self, billing_account_name: str):
         """Assign given collection to a billing account."""
         billing_account_id = _get_billing_account_id(self.resolwe, billing_account_name)
 

@@ -1,8 +1,13 @@
 """Process resource."""
 
 import logging
+from typing import TYPE_CHECKING
 
 from .base import BaseResolweResource
+from .fields import BaseField, FieldAccessType, StringField
+
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
 
 
 class DescriptorSchema(BaseResolweResource):
@@ -16,16 +21,10 @@ class DescriptorSchema(BaseResolweResource):
 
     endpoint = "descriptorschema"
 
-    READ_ONLY_FIELDS = BaseResolweResource.READ_ONLY_FIELDS + ("schema",)
-    WRITABLE_FIELDS = BaseResolweResource.WRITABLE_FIELDS + ("description",)
+    schema = BaseField()
+    description = StringField(access_type=FieldAccessType.WRITABLE)
 
-    def __init__(self, resolwe, **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
-
-        #: description
-        self.description = None
-        #: schema
-        self.schema = None
-
         super().__init__(resolwe, **model_data)

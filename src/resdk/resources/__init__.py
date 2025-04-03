@@ -41,7 +41,7 @@ Resource classes
 .. autoclass:: resdk.resources.DescriptorSchema
    :members:
    :inherited-members:
-   
+
 .. autoclass:: resdk.resources.AnnotationValue
    :members:
    :inherited-members:
@@ -54,7 +54,7 @@ Resource classes
    :members:
    :inherited-members:
 
-.. autoclass:: resdk.resources.PredictionValue
+.. autoclass:: resdk.resources.PredictionField
    :members:
    :inherited-members:
 
@@ -62,7 +62,15 @@ Resource classes
    :members:
    :inherited-members:
 
-.. autoclass:: resdk.resources.PredictionField
+.. autoclass:: resdk.resources.PredictionPreset
+   :members:
+   :inherited-members:
+
+.. autoclass:: resdk.resources.PredictionValue
+   :members:
+   :inherited-members:
+
+.. autoclass:: resdk.resources.Variant
    :members:
    :inherited-members:
 
@@ -110,11 +118,23 @@ from .data import Data
 from .descriptor import DescriptorSchema
 from .geneset import Geneset
 from .metadata import Metadata
-from .predictions import PredictionField, PredictionGroup, PredictionValue
+from .predictions import (
+    PredictionField,
+    PredictionGroup,
+    PredictionPreset,
+    PredictionValue,
+)
 from .process import Process
 from .relation import Relation
 from .sample import Sample
 from .user import Group, User
+from .variants import (
+    Variant,
+    VariantAnnotation,
+    VariantAnnotationTranscript,
+    VariantCall,
+    VariantExperiment,
+)
 
 __all__ = (
     "AnnotationField",
@@ -128,9 +148,15 @@ __all__ = (
     "Metadata",
     "PredictionField",
     "PredictionGroup",
+    "PredictionPreset",
     "PredictionValue",
     "Sample",
     "Process",
     "Relation",
     "User",
+    "Variant",
+    "VariantAnnotation",
+    "VariantAnnotationTranscript",
+    "VariantCall",
+    "VariantExperiment",
 )

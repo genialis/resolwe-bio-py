@@ -4,6 +4,16 @@ Change Log
 
 All notable changes to this project are documented in this file.
 
+==========
+Unreleased
+==========
+
+Added
+-----
+- Add ``prediction_group`` to ``Resolwe`` object
+- Add ``PredictionPreset`` resource
+
+
 ===================
 22.0.0 - 2025-03-28
 ===================
@@ -17,6 +27,8 @@ Added
 - Add a resolwe method for fetching the server module versions
 - Add support for ``Python 3.13``
 - Add ``QCTables`` class to the ``tables`` module
+- Add serializer support to simplify custom serialization of resources
+- Add variant related objects
 
 Changed
 -------

@@ -13,11 +13,17 @@ import collections
 import copy
 import logging
 import operator
+from typing import TYPE_CHECKING, Iterable, Union
 
 import tqdm
 
-from resdk.resources import AnnotationField, DescriptorSchema, PredictionField, Process
+from resdk.resources import DescriptorSchema, Process
 from resdk.resources.base import BaseResource
+from resdk.resources.fields import DataSource, DictResourceField, FieldStatus
+
+if TYPE_CHECKING:
+    from resdk import Resolwe
+    from resdk.resources import AnnotationField, PredictionField
 
 
 class ResolweQuery:
@@ -81,7 +87,9 @@ class ResolweQuery:
     api = None
     logger = None
 
-    def __init__(self, resolwe, resource, slug_field="slug"):
+    def __init__(
+        self, resolwe: "Resolwe", resource: type[BaseResource], slug_field: str = "slug"
+    ):
         """Initialize attributes."""
         self.resolwe = resolwe
         self.resource = resource
@@ -93,11 +101,13 @@ class ResolweQuery:
 
         self.logger = logging.getLogger(__name__)
 
-    def _non_string_iterable(self, item) -> bool:
+    def _non_string_iterable(self, item: Iterable) -> bool:
         """Return True when item is iterable but not string."""
         return isinstance(item, collections.abc.Iterable) and not isinstance(item, str)
 
-    def __getitem__(self, index):
+    def __getitem__(
+        self, index: Union[slice, int]
+    ) -> Union["BaseResource", "ResolweQuery"]:
         """Retrieve an item or slice from the set of results."""
         if not isinstance(index, (slice, int)):
             raise TypeError
@@ -142,17 +152,17 @@ class ResolweQuery:
         self._fetch()
         return iter(self._cache)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return string representation of the current object."""
         self._fetch()
         rep = "[{}]".format(",\n ".join(str(obj) for obj in self._cache))
         return rep
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Return length of results of current query."""
         return self.count()
 
-    def _clone(self):
+    def _clone(self) -> "ResolweQuery":
         """Return copy of current object with empty cache."""
         new_obj = self.__class__(self.resolwe, self.resource)
         new_obj._filters = copy.deepcopy(self._filters)
@@ -171,11 +181,28 @@ class ResolweQuery:
 
         return obj
 
-    def _add_filter(self, filter_):
+    def _add_filter(self, filter_: dict):
         """Add filtering parameters."""
         for key, value in filter_.items():
-            # 'sample' is called 'entity' in the backend.
-            key = key.replace("sample", "entity")
+            # Make best-effort to rename fields to server fields.
+            resource = self.resource
+            filter_parts = key.split("__")
+            for part_num in range(len(filter_parts)):
+                resource_fields = resource._find_fields()
+                part = filter_parts[part_num]
+                # Bail out, we lost track of the book keeping.
+                if part not in resource_fields:
+                    break
+                field = resource_fields[part]
+                if field.server_field != part:
+                    filter_parts[part_num] = resource_fields[part].server_field
+                # Continue only if the field represents a resource.
+                if not isinstance(field, DictResourceField):
+                    break
+                resource = field.Resource
+
+            key = "__".join(filter_parts)
+
             value = self._dehydrate_resources(value)
             if self._non_string_iterable(value):
                 value = ",".join(map(str, value))
@@ -199,9 +226,11 @@ class ResolweQuery:
 
         return dict(filters)
 
-    def _populate_resource(self, data):
+    def _populate_resource(self, data: dict) -> BaseResource:
         """Populate resource with given data."""
-        return self.resource(resolwe=self.resolwe, **data)
+        return self.resource(
+            resolwe=self.resolwe, **data, initial_data_source=DataSource.SERVER
+        )
 
     def _fetch(self):
         """Make request to the server and populate cache."""
@@ -234,7 +263,7 @@ class ResolweQuery:
         self._cache = None
         self._count = None
 
-    def count(self):
+    def count(self) -> int:
         """Return number of objects in current query."""
         if self._count is None:
             count_query = self._clone()
@@ -297,20 +326,19 @@ class ResolweQuery:
 
         return response[0]
 
-    def create(self, **model_data):
+    def create(self, **model_data: dict) -> BaseResource:
         """Return new instance of current resource."""
         resource = self.resource(self.resolwe, **model_data)
         resource.save()
-
         return resource
 
-    def filter(self, **filters):
+    def filter(self, **filters: dict) -> "ResolweQuery":
         """Return clone of current query with added given filters."""
         new_query = self._clone()
         new_query._add_filter(filters)
         return new_query
 
-    def delete(self, force=False):
+    def delete(self, force: bool = False):
         """Delete objects in current query.
 
         :param bool force: Do not trigger confirmation prompt. WARNING: Be
@@ -328,7 +356,7 @@ class ResolweQuery:
 
         self.clear_cache()
 
-    def all(self):
+    def all(self) -> "ResolweQuery":
         """Return copy of the current queryset.
 
         This is handy function to get newly created query without any
@@ -336,7 +364,7 @@ class ResolweQuery:
         """
         return self._clone()
 
-    def search(self, text):
+    def search(self, text: str) -> "ResolweQuery":
         """Full text search."""
         if not self.resource.full_search_paramater:
             raise NotImplementedError()
@@ -345,7 +373,9 @@ class ResolweQuery:
         new_query._add_filter({self.resource.full_search_paramater: text})
         return new_query
 
-    def iterate(self, chunk_size=100, show_progress=False):
+    def iterate(
+        self, chunk_size: int = 100, show_progress: bool = False
+    ) -> Iterable["BaseResource"]:
         """
         Iterate through query.
 
@@ -411,20 +441,35 @@ class AnnotationValueQuery(ResolweQuery):
         # Execute the query in a single request.
         super()._fetch()
 
-        missing = collections.defaultdict(list)
+        missing_fields = collections.defaultdict(set)
+        missing_samples = collections.defaultdict(set)
         for value in self._cache:
-            if value._field is None:
-                missing[value.field_id].append(value)
+            if value._sample_status == FieldStatus.LAZY:
+                missing_samples[value._sample_original].add(value)
+            if value._field_status == FieldStatus.LAZY:
+                missing_fields[value._field_original].add(value)
 
-        if missing:
+        if missing_fields:
             # Get corresponding annotation field details in a single query and attach it to
             # the values.
             for field in self.resolwe.annotation_field.filter(
-                id__in=missing.keys()
+                id__in=missing_fields.keys()
             ).iterate():
-                for value in missing[field.id]:
+                for value in missing_fields[field.id]:
                     value._field = field
-                    value._original_values["field"] = field._original_values
+                    value._field_original = field
+                    value._field_status = FieldStatus.SET
+
+        if missing_samples:
+            # Get corresponding annotation field details in a single query and attach it to
+            # the values.
+            for sample in self.resolwe.sample.filter(
+                id__in=missing_samples.keys()
+            ).iterate():
+                for value in missing_samples[sample.id]:
+                    value._sample = sample
+                    value._sample_original = sample
+                    value._sample_status = FieldStatus.SET
 
 
 class PredictionFieldQuery(ResolweQuery):

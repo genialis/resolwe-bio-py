@@ -2,10 +2,15 @@
 
 import logging
 from time import sleep, time
+from typing import TYPE_CHECKING, Any
 
 from resdk.exceptions import ResolweServerError
 
 from .base import BaseResource
+from .fields import BaseField, DateTimeField, StringField
+
+if TYPE_CHECKING:
+    from resdk.resolwe import Resolwe
 
 
 class BackgroundTask(BaseResource):
@@ -18,35 +23,15 @@ class BackgroundTask(BaseResource):
     """
 
     endpoint = "task"
+    started = DateTimeField()
+    finished = DateTimeField()
+    status = StringField()
+    description = StringField()
+    output = BaseField()
 
-    READ_ONLY_FIELDS = BaseResource.READ_ONLY_FIELDS + (
-        "started",
-        "finished",
-        "status",
-        "description",
-        "output",
-    )
-    WRITABLE_FIELDS = ()
-
-    def __init__(self, resolwe, **model_data):
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         self.logger = logging.getLogger(__name__)
-
-        #: started
-        self.started = None
-        #: finished
-        self.finished = None
-        #: status - Possible values:
-        #: WA (waiting)
-        #: PR (processing)
-        #: OK (done)
-        #: ER (error)
-        self.status = None
-        #: description
-        self.description = None
-        #: output - JSON field, the actual value depends on the background task
-        self.output = None
-
         super().__init__(resolwe, **model_data)
 
     @property
@@ -73,7 +58,7 @@ class BackgroundTask(BaseResource):
             raise RuntimeError(f"Waiting for taks {self.id} timeout.")
         return self
 
-    def result(self, timeout: float = 0, final_statuses=["OK"]):
+    def result(self, timeout: float = 0, final_statuses: list[str] = ["OK"]) -> Any:
         """Wait fot the background tast to finish and return its result.
 
         :attr timeout: how many seconds to wait for task to finish (0 to wait forever).
