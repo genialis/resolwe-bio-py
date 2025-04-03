@@ -2,7 +2,7 @@
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, NamedTuple, Type, Union
+from typing import TYPE_CHECKING, NamedTuple, Type, Union, Iterable
 
 from .base import BaseResource
 from .fields import (
@@ -180,3 +180,28 @@ class PredictionValue(BaseResource):
             f"PredictionValue <path: {self.field.group.name}.{self.field.name}, "
             f"value: '{self.value}'>"
         )
+
+
+class PredictionPreset(BaseResource):
+    """Resolwe PredictionPreset resource."""
+
+    endpoint = "prediction_preset"
+    contributor = DictResourceField(
+        resource_class_name="User", access_type=FieldAccessType.UPDATE_PROTECTED
+    )
+    name = StringField(access_type=FieldAccessType.WRITABLE)
+    fields = IdResourceField(
+        resource_class_name="PredictionField",
+        access_type=FieldAccessType.WRITABLE,
+        many=True,
+    )
+
+    def __init__(self, resolwe: "Resolwe", **model_data: dict):
+        """Initialize the instance."""
+        self.logger = logging.getLogger(__name__)
+        #: prediction fields
+        super().__init__(resolwe, **model_data)
+
+    def __repr__(self) -> str:
+        """Return user friendly string representation."""
+        return f"PredictionPreset <name: {self.name}>"

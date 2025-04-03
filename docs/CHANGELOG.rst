@@ -11,6 +11,7 @@ Unreleased
 Added
 -----
 - Add ``prediction_group`` to ``Resolwe`` object
+- Add ``PredictionPreset`` resource
 
 
 ===================
