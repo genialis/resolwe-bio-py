@@ -48,6 +48,11 @@ jobs:
   build:
     runs-on: public-docker-runner
     needs: [unittest, e2e]
+
+    permissions:
+      id-token: write
+      contents: read
+
     if: startsWith(github.ref, 'refs/tags')
     env:
       PYTHON: "python3.13"
@@ -67,5 +72,3 @@ jobs:
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1.12
-        with:
-          password: ${{ secrets.pypi_password }}
