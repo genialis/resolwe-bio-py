@@ -161,6 +161,8 @@ class BaseTables(abc.ABC):
             type=self.process_type,
             status="OK",
             fields=self.DATA_FIELDS,
+            # Do not include data that does not belong to a sample
+            entity__isnull=False,
         ).iterate():
             # We are using iterate to prevent 504 Bad Gateways
             # This means that data is given from oldest to newest
