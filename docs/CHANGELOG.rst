@@ -5,6 +5,15 @@ Change Log
 All notable changes to this project are documented in this file.
 
 ===================
+22.1.0 - 2025-04-14
+===================
+
+Fixed
+-----
+- Fix a bug in QCTables caused by an orphan Data
+
+
+===================
 22.0.0 - 2025-03-28
 ===================
 
