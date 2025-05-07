@@ -5,10 +5,18 @@ import copy
 import importlib
 from datetime import datetime
 from enum import Enum, auto
+from sys import version_info
 from typing import TYPE_CHECKING, Callable, Iterable, Optional
 
 if TYPE_CHECKING:
     from resdk.resources.base import BaseResource
+
+# Remove this when Python 3.11 is the minimum supported version.
+date_parser = (
+    datetime.fromisoformat
+    if version_info >= (3, 11)
+    else lambda value: datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
+)
 
 
 class DataSource(Enum):
@@ -321,7 +329,7 @@ class DateTimeField(BaseField):
 
     def _to_python_single(self, value, instance=None):
         """Deserialize the given field value."""
-        return datetime.fromisoformat(value)
+        return date_parser(value)
 
     def _compare(self, original_json, current_python):
         """Compare the original JSON and current Python value."""
