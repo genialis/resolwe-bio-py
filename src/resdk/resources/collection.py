@@ -24,6 +24,8 @@ from .utils import _get_billing_account_id
 
 if TYPE_CHECKING:
     from resdk.resolwe import Resolwe
+    from resdk.resources.annotations import AnnotationField
+    from resdk.resources.predictions import PredictionField
 
 
 class BaseCollection(BaseResolweResource):
@@ -133,11 +135,25 @@ class Collection(CollectionRelationsMixin, BaseCollection):
     data = QueryRelatedField("Data")
     samples = QueryRelatedField("Sample")
     relations = QueryRelatedField("Relation")
+    annotation_fields = QueryRelatedField("AnnotationField")
+    prediction_fields = QueryRelatedField("PredictionField", filter_field_name="collections")
 
     def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         super().__init__(resolwe, **model_data)
         self.logger = logging.getLogger(__name__)
+
+    def set_annotation_fields(self, annotation_fields: Iterable["AnnotationField"]):
+        """Set collection annotation fields."""
+        self.api(self.id).set_annotation_fields.post(
+            {"annotation_fields": [{"id": field.id} for field in annotation_fields]}
+        )
+
+    def set_prediction_fields(self, prediction_fields: Iterable["PredictionField"]):
+        """Set collection annotation fields."""
+        self.api(self.id).set_prediction_fields.post(
+            {"prediction_fields": [{"id": field.id} for field in prediction_fields]}
+        )
 
     @assert_object_exists
     def duplicate(self) -> "Collection":
