@@ -295,6 +295,10 @@ class BaseField:
         setattr(instance, self._value_attribute_name, value)
         setattr(instance, self._status_attribute_name, FieldStatus.SET)
 
+    def _after_save(self, instance: "BaseResource"):
+        """Called after the resource is saved."""
+        pass
+
     def __repr__(self) -> str:
         """Returt the string representation."""
         return f"<{self.__class__.__name__} {self.public_name}>"

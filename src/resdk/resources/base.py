@@ -196,6 +196,10 @@ class BaseResource:
         }:
             self._update_fields(api_call(payload), data_source=DataSource.SERVER)
 
+        # Notify the fields that the object was saved to perform any additional tasks.
+        for field_name, field in self._get_fields(to_payload).items():
+            field._after_save(self)
+
     def __hash__(self):
         """Get the hash."""
         return getattr(self, "id", None)

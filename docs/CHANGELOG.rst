@@ -14,6 +14,11 @@ Added
 - Add ``prediction_group`` to ``Resolwe`` object
 - Add ``PredictionPreset`` resource
 
+Changed
+-------
+- Add after save method to the base field to perform additional actions after
+  the field is saved
+
 
 ===================
 22.1.0 - 2025-04-14
