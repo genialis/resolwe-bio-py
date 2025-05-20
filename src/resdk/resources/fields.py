@@ -37,8 +37,13 @@ class FieldAccessType(Enum):
 class FieldStatus(Enum):
     """Field status."""
 
+    # The field is not set.
     UNSET = auto()
+    # The field is set by user or server data.
     SET = auto()
+    # The lazy loaded field was loaded from the server.
+    SET_LAZY = auto()
+    # The lazy loded field was not yet loaded.
     LAZY = auto()
 
 
@@ -213,6 +218,8 @@ class BaseField:
         creating = instance.id is None
         lazy = status == FieldStatus.LAZY
 
+        print("Checking if field changed", self.public_name, status, lazy)
+
         # Read only and unset and lazy fields are not considered changed.
         # Lazy status can only be set by the API-originating data.
         if status == FieldStatus.UNSET or lazy:
@@ -229,6 +236,11 @@ class BaseField:
 
         original_json = getattr(instance, self._original_attribute_name)
         current_python = getattr(instance, self._value_attribute_name)
+
+        print("Comparing original and current", self.public_name)
+        print("Original", original_json)
+        print("Current", current_python)
+
         return not self._compare(original_json, current_python)
 
     def _compare(self, original_json, current_python):
@@ -435,6 +447,7 @@ class DictResourceField(BaseField):
     def _compare(self, original_json, current_python):
         """Compare the original JSON and current Python value."""
         # Handle the edge case of None values.
+        print("Dict resource compare", self.public_name, original_json, current_python)
         if original_json is None:
             return current_python is None
 
@@ -446,6 +459,8 @@ class DictResourceField(BaseField):
         else:
             json_id = original_json.get(self._property_name)
             python_id = getattr(current_python, self._property_name)
+
+        print("Comparing ids", json_id, python_id)
 
         return json_id == python_id
 
@@ -462,12 +477,13 @@ class LazyResourceField(DictResourceField):
     ):
         """Initialize the instance."""
         self._lazy_loader = initial_loader
+        if "access_type" not in kwargs:
+            kwargs["access_type"] = FieldAccessType.READ_ONLY
         super().__init__(
             resource_class_name,
             *args,
             **kwargs,
             assert_exists=True,
-            access_type=FieldAccessType.READ_ONLY,
             many=True,
         )
 
@@ -479,7 +495,7 @@ class LazyResourceField(DictResourceField):
         if self.status(instance) == FieldStatus.UNSET:
             value = self._lazy_loader(instance)
             setattr(instance, self._value_attribute_name, value)
-            setattr(instance, self._status_attribute_name, FieldStatus.SET)
+            setattr(instance, self._status_attribute_name, FieldStatus.SET_LAZY)
 
         self._checks_before_get(instance)
         return getattr(instance, self._value_attribute_name, None)
@@ -497,6 +513,7 @@ class QueryRelatedField(LazyResourceField):
 
         When no filter_field_name is provided, it is infered from the endpoint name.
         """
+        self._filter_field_name = filter_field_name
         super().__init__(
             resource_class_name,
             initial_loader=lambda instance: instance.resolwe.get_query_by_resource(

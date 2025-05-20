@@ -19,6 +19,7 @@ from .fields import (
     FieldAccessType,
     QueryRelatedField,
     StringField,
+    FieldStatus,
 )
 from .utils import _get_billing_account_id
 
@@ -121,6 +122,48 @@ class BaseCollection(BaseResolweResource):
         self.resolwe._download_files(files, download_dir)
 
 
+class CollectionPredictionField(QueryRelatedField):
+
+    def _sends_payload_if_changed(self, instance: "BaseResource") -> bool:
+        """Check if the field has payload data to send when saved."""
+        return False
+
+    def _after_save(self, instance):
+        """Call the API to set the prediction fields if needed."""
+        print("Checking if prediction fields changed")
+        print("Field status", self.status(instance))
+        if self.status(instance) == FieldStatus.SET:
+            print("Setting prediction fields")
+
+            prediction_fields = getattr(instance, self._value_attribute_name)
+            print("Got fields", prediction_fields)
+            instance.api(instance.id).set_prediction_fields.post(
+                {"prediction_fields": [{"id": field.id} for field in prediction_fields]}
+            )
+        else:
+            print("No prediction fields changed")
+        return super()._after_save(instance)
+
+
+class CollectionAnnotationField(QueryRelatedField):
+
+    def _sends_payload_if_changed(self, instance: "BaseResource") -> bool:
+        """Check if the field has payload data to send when saved."""
+        return False
+
+    def _after_save(self, instance):
+        """Call the API to set the prediction fields if needed."""
+        print("Field status", self.status(instance))
+        # Always consider changed when it was set.
+        if self.status(instance) == FieldStatus.SET:
+            print("Setting annotation fields")
+            annotation_fields = getattr(instance, self._value_attribute_name)
+            instance.api(self.id).set_annotation_fields.post(
+                {"annotation_fields": [{"id": field.id} for field in annotation_fields]}
+            )
+        return super()._after_save(instance)
+
+
 class Collection(CollectionRelationsMixin, BaseCollection):
     """Resolwe Collection resource.
 
@@ -135,25 +178,31 @@ class Collection(CollectionRelationsMixin, BaseCollection):
     data = QueryRelatedField("Data")
     samples = QueryRelatedField("Sample")
     relations = QueryRelatedField("Relation")
-    annotation_fields = QueryRelatedField("AnnotationField")
-    prediction_fields = QueryRelatedField("PredictionField", filter_field_name="collections")
+    annotation_fields = CollectionAnnotationField(
+        "AnnotationField", access_type=FieldAccessType.WRITABLE
+    )
+    prediction_fields = CollectionPredictionField(
+        "PredictionField",
+        filter_field_name="collections",
+        access_type=FieldAccessType.WRITABLE,
+    )
 
     def __init__(self, resolwe: "Resolwe", **model_data: dict):
         """Initialize attributes."""
         super().__init__(resolwe, **model_data)
         self.logger = logging.getLogger(__name__)
 
-    def set_annotation_fields(self, annotation_fields: Iterable["AnnotationField"]):
-        """Set collection annotation fields."""
-        self.api(self.id).set_annotation_fields.post(
-            {"annotation_fields": [{"id": field.id} for field in annotation_fields]}
-        )
+    # def set_annotation_fields(self, annotation_fields: Iterable["AnnotationField"]):
+    #     """Set collection annotation fields."""
+    #     self.api(self.id).set_annotation_fields.post(
+    #         {"annotation_fields": [{"id": field.id} for field in annotation_fields]}
+    #     )
 
-    def set_prediction_fields(self, prediction_fields: Iterable["PredictionField"]):
-        """Set collection annotation fields."""
-        self.api(self.id).set_prediction_fields.post(
-            {"prediction_fields": [{"id": field.id} for field in prediction_fields]}
-        )
+    # def set_prediction_fields(self, prediction_fields: Iterable["PredictionField"]):
+    #     """Set collection annotation fields."""
+    #     self.api(self.id).set_prediction_fields.post(
+    #         {"prediction_fields": [{"id": field.id} for field in prediction_fields]}
+    #     )
 
     @assert_object_exists
     def duplicate(self) -> "Collection":
