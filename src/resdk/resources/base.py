@@ -192,9 +192,13 @@ class BaseResource:
         if payload := {
             field.server_field: field.to_json(getattr(self, field_name))
             for field_name, field in self._get_fields(to_payload).items()
-            if field.changed(self)
+            if field.changed(self) and field._sends_payload_if_changed(self)
         }:
             self._update_fields(api_call(payload), data_source=DataSource.SERVER)
+
+        # Notify the fields that the object was saved to perform any additional tasks.
+        for field_name, field in self._get_fields(to_payload).items():
+            field._after_save(self)
 
     def __hash__(self):
         """Get the hash."""
