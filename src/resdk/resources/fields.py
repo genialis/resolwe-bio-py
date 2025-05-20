@@ -295,6 +295,10 @@ class BaseField:
         setattr(instance, self._value_attribute_name, value)
         setattr(instance, self._status_attribute_name, FieldStatus.SET)
 
+    def _sends_payload_if_changed(self, instance: "BaseResource") -> bool:
+        """Check if the field has payload data to send when saved."""
+        return True
+
     def _after_save(self, instance: "BaseResource"):
         """Called after the resource is saved."""
         pass

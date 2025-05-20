@@ -18,6 +18,7 @@ Changed
 -------
 - Add after save method to the base field to perform additional actions after
   the field is saved
+- Field can specify if it has payload to send when the resource is saved
 
 
 ===================
