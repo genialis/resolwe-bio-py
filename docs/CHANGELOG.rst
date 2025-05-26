@@ -13,6 +13,7 @@ Added
 - Add variant related objects
 - Add ``prediction_group`` to ``Resolwe`` object
 - Add ``PredictionPreset`` resource
+- Allow managing prediction and annotation fields associated to a collection
 
 
 ===================

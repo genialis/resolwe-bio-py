@@ -24,6 +24,8 @@ from .utils import _get_billing_account_id
 
 if TYPE_CHECKING:
     from resdk.resolwe import Resolwe
+    from resdk.resources.annotations import AnnotationField
+    from resdk.resources.predictions import PredictionField
 
 
 class BaseCollection(BaseResolweResource):
@@ -138,6 +140,8 @@ class Collection(CollectionRelationsMixin, BaseCollection):
         """Initialize attributes."""
         super().__init__(resolwe, **model_data)
         self.logger = logging.getLogger(__name__)
+        self._annotation_fields = None
+        self._prediction_fields = None
 
     @assert_object_exists
     def duplicate(self) -> "Collection":
@@ -164,3 +168,41 @@ class Collection(CollectionRelationsMixin, BaseCollection):
             data={"collection_id": self.id},
         )
         response.raise_for_status()
+
+    def set_annotation_fields(self, annotation_fields: Iterable["AnnotationField"]):
+        """Set collection annotation fields.
+
+        The change is applied instantly.
+        """
+        self.api(self.id).set_annotation_fields.post(
+            {"annotation_fields": [{"id": field.id} for field in annotation_fields]}
+        )
+        self._annotation_fields = None
+
+    def get_annotation_fields(self) -> Iterable["AnnotationField"]:
+        """Get annotation fields associated with the collection."""
+        if self._annotation_fields is None:
+            self._annotation_fields = self.resolwe.annotation_field.filter(
+                collection=self.id
+            )
+        assert self._annotation_fields is not None
+        return self._annotation_fields
+
+    def set_prediction_fields(self, prediction_fields: Iterable["PredictionField"]):
+        """Set collection prediction fields.
+
+        The change is applied instantly.
+        """
+        self.api(self.id).set_prediction_fields.post(
+            {"prediction_fields": [{"id": field.id} for field in prediction_fields]}
+        )
+        self._prediction_fields = None
+
+    def get_prediction_fields(self) -> Iterable["PredictionField"]:
+        """Get prediction fields associated with the collection."""
+        if self._prediction_fields is None:
+            self._prediction_fields = self.resolwe.prediction_field.filter(
+                collections=self.id
+            )
+        assert self._prediction_fields is not None
+        return self._prediction_fields
