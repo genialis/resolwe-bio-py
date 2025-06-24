@@ -15,6 +15,11 @@ Added
 - Add ``PredictionPreset`` resource
 - Allow managing prediction and annotation fields associated to a collection
 
+Fixed
+-----
+- AnnotationValue must be ordered by the ``created`` instead of ``modified``
+  field
+
 
 ===================
 22.1.0 - 2025-04-14
