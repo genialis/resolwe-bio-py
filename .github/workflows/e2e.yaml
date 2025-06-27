@@ -6,8 +6,8 @@ on:
 
 env:
   # Registry settings.
-  REGISTRY: "396487289173.dkr.ecr.eu-west-1.amazonaws.com"
-  AWS_REGION: "eu-west-1"
+  REGISTRY: "396487289173.dkr.ecr.us-east-1.amazonaws.com"
+  AWS_REGION: "us-east-1"
   K3D_BASE_IMAGE: genialis/ci/k3d-base:v1.30.8-k3s1
   # Environment
   ENV_FILE: "/workdir/e2e/config/resolwe-bio-py.env"

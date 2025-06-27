@@ -238,7 +238,7 @@ class BaseTables(abc.ABC):
                 batch_sample_ids = [s.id for s in self._samples[i : i + batch_size]]
                 newest_ann_value = self.resolwe.annotation_value.get(
                     entity__in=batch_sample_ids,
-                    ordering="-modified",
+                    ordering="-created",
                     limit=1,
                 )
                 newest_stamps.append(newest_ann_value.modified)
