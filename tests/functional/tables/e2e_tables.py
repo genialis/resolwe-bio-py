@@ -32,28 +32,28 @@ class TestTables(BaseResdkFunctionalTest):
         shutil.rmtree(self.cache_dir)
 
     def test_meta(self):
-        self.assertEqual(self.ct.meta.shape, (8, 9))
-        self.assertIn(39000, self.ct.meta.index)
+        self.assertEqual(self.ct.meta.shape, (4, 1))
+        self.assertIn(146756, self.ct.meta.index)
         self.assertIn("general.species", self.ct.meta.columns)
 
     def test_qc(self):
-        self.assertEqual(self.ct.qc.shape, (8, 12))
-        self.assertIn(39000, self.ct.qc.index)
+        self.assertEqual(self.ct.qc.shape, (6, 22))
+        self.assertIn(146756, self.ct.qc.index)
         self.assertIn("total_read_count_raw", self.ct.qc.columns)
-        self.assertEqual(int(self.ct.qc.loc[39000, "total_read_count_raw"]), 42738650)
+        self.assertEqual(int(self.ct.qc.loc[146756, "total_read_count_raw"]), 46910187)
 
     def test_rc(self):
-        self.assertEqual(self.ct.rc.shape, (8, 58487))
-        self.assertIn(39000, self.ct.rc.index)
+        self.assertEqual(self.ct.rc.shape, (4, 62710))
+        self.assertIn(146756, self.ct.rc.index)
         self.assertIn("ENSG00000000003", self.ct.rc.columns)
-        self.assertEqual(self.ct.rc.iloc[0, 0], 792)
+        self.assertEqual(self.ct.rc.iloc[0, 0], 918)
         self.assertIsInstance(self.ct.rc.iloc[0, 0], np.int32)
 
     def test_exp(self):
-        self.assertEqual(self.ct.exp.shape, (8, 58487))
-        self.assertIn(39000, self.ct.exp.index)
+        self.assertEqual(self.ct.exp.shape, (4, 62710))
+        self.assertIn(146756, self.ct.exp.index)
         self.assertIn("ENSG00000000003", self.ct.exp.columns)
-        self.assertAlmostEqual(self.ct.exp.iloc[0, 0], 19.447467, places=3)
+        self.assertAlmostEqual(self.ct.exp.iloc[0, 0], 25.004105, places=3)
         self.assertIsInstance(self.ct.exp.iloc[0, 0], np.float32)
 
     def test_consistent_index(self):
@@ -129,7 +129,7 @@ class TestQCTables(BaseResdkFunctionalTest):
     def setUp(self):
         self.cache_dir = tempfile.mkdtemp()
         self.test_server_url = TABLES_LIVE_URL
-        self.test_collection_slug = "qctables-test-collection"
+        self.test_collection_slug = "resdk-test-collection-tables"
         self.res = resdk.Resolwe(
             url=self.test_server_url,
             username=TABLES_USER_EMAIL,
@@ -143,21 +143,21 @@ class TestQCTables(BaseResdkFunctionalTest):
 
     def test_general_alignment(self):
         self.assertEqual(
-            self.qt.general_alignment.loc[143064, "mapped_reads"], 36715200
+            self.qt.general_alignment.loc[146756, "mapped_reads"], 36750221
         )
 
     def test_rnaseq_qc(self):
-        self.assertEqual(self.qt.rnaseq.loc[143064, "gc_content_raw"], 50.0)
+        self.assertEqual(self.qt.rnaseq.loc[146756, "gc_content_raw"], 50.0)
 
     def test_chipseq_qc(self):
         self.assertEqual(
-            self.qt.chipseq.loc[139801, "control_prepeak_mapped_percentage"],
+            self.qt.chipseq.loc[146774, "control_prepeak_mapped_percentage"],
             0.9018,
         )
 
     def test_wgs_qc(self):
         self.assertEqual(
-            self.qt.wgs.loc[139806, "picard_insert_min_size"],
+            self.qt.wgs.loc[146779, "picard_insert_min_size"],
             2.0,
         )
 
