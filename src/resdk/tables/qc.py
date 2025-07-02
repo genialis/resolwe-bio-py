@@ -12,6 +12,7 @@ QCTables
 
 """
 
+from contextlib import suppress
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Optional
@@ -487,7 +488,8 @@ class QCTables(BaseTables):
         for col, dtype in column_types.items():
             # Ensure that these numbers are round to nearest integer
             if "int" in dtype.lower():
-                df[col] = df[col].round().astype(dtype)
+                with suppress(TypeError):
+                    df[col] = df[col].round().astype(dtype)
             else:
                 df[col] = df[col].astype(dtype)
 
