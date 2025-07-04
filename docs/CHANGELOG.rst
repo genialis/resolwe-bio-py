@@ -4,6 +4,15 @@ Change Log
 
 All notable changes to this project are documented in this file.
 
+==========
+Unreleased
+==========
+
+Fixed
+-----
+- Fix bug in ``get_or_run`` method
+
+
 ===================
 22.2.0 - 2025-07-02
 ===================

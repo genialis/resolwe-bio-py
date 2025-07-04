@@ -501,12 +501,12 @@ class Resolwe:
         inputs = self._process_inputs(input, process)
 
         data = {
-            "process": process.slug,
+            "process": {"slug": process.slug},
             "input": inputs,
         }
 
         model_data = self.api.data.get_or_create.post(data)
-        return Data(resolwe=self, **model_data)
+        return Data(resolwe=self, **model_data, initial_data_source=DataSource.SERVER)
 
     def _download_files(
         self,
