@@ -12,6 +12,7 @@ QCTables
 
 """
 
+import re
 from contextlib import suppress
 from functools import lru_cache
 from pathlib import Path
@@ -39,6 +40,26 @@ from .qc_mappings import (
     QORTS_SUMMARY_MAP,
     SAMPLE_INFO_MAP,
 )
+
+# MultiQC removes these suffixes from sample names in the generated tables and .txt files.
+# The list of suffixes to remove is defined in the
+# ``resolwe_docker_images/common/assets/multiqc_config.yml`` file within the
+# https://github.com/genialis/resolwe-docker-images repository.
+MQC_CLEANED_SFXS = [
+    ".gz",
+    ".fastq",
+    ".fq",
+    ".bam",
+    ".sam",
+    ".sra",
+    "_tophat",
+    "_star_aligned",
+    "_fastqc",
+    "_preprocessed",
+    "_downsampled",
+    ".rRNA",
+    "fastqgz",
+]
 
 
 def _filter_and_rename_columns(df, column_map):
@@ -86,6 +107,16 @@ def _aggregate_df(df, column_map, prefix=None):
         series = series.add_prefix(prefix)
 
     return series
+
+
+def _clean_sample_name(
+    filename: str,
+) -> str:
+    """Clean sample name extensions to match MultiQC output."""
+    sfx_pattern = re.compile(
+        r"(" + "|".join(map(re.escape, MQC_CLEANED_SFXS)) + r").*$"
+    )
+    return sfx_pattern.sub("", filename)
 
 
 def general_multiqc_parser(file_object, name, column_map):
@@ -426,7 +457,7 @@ class QCTables(BaseTables):
             case_sample = next(
                 (sample for sample in self._samples if sample.id == sample_id), None
             )
-            sample_name = case_sample.name
+            sample_name = _clean_sample_name(case_sample.name)
             return self.DATA_TYPES[data_type]["parser"](
                 file_object=file_obj,
                 name=sample_id,
