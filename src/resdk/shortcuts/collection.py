@@ -36,7 +36,7 @@ class CollectionRelationsMixin:
 
         relation_data = {
             "type": relation_type,
-            "collection": self.id,
+            "collection": self,
             "category": category,
             "partitions": [],
         }

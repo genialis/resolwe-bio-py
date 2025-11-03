@@ -18,7 +18,7 @@ class TestCollection(unittest.TestCase):
         # only samples
         collection.create_group_relation(category="replicates", samples=[1, 2, 3])
         collection.resolwe.relation.create.assert_called_with(
-            collection=1,
+            collection=collection,
             type="group",
             category="replicates",
             partitions=[
@@ -37,7 +37,7 @@ class TestCollection(unittest.TestCase):
             labels=["first", "second", "third"],
         )
         collection.resolwe.relation.create.assert_called_with(
-            collection=1,
+            collection=collection,
             type="group",
             category="replicates",
             partitions=[
@@ -64,7 +64,7 @@ class TestCollection(unittest.TestCase):
         # only samples
         collection.create_compare_relation(category="case-control", samples=[1, 2])
         collection.resolwe.relation.create.assert_called_with(
-            collection=1,
+            collection=collection,
             type="compare",
             category="case-control",
             partitions=[
@@ -80,7 +80,7 @@ class TestCollection(unittest.TestCase):
             category="case-control", samples=[1, 2], labels=["case", "control"]
         )
         collection.resolwe.relation.create.assert_called_with(
-            collection=1,
+            collection=collection,
             type="compare",
             category="case-control",
             partitions=[
@@ -106,7 +106,7 @@ class TestCollection(unittest.TestCase):
         # only samples
         collection.create_series_relation(category="time-series", samples=[1, 2, 3])
         collection.resolwe.relation.create.assert_called_with(
-            collection=1,
+            collection=collection,
             type="series",
             category="time-series",
             partitions=[
@@ -123,7 +123,7 @@ class TestCollection(unittest.TestCase):
             category="time-series", samples=[1, 2, 3], labels=["0Hr", "2Hr", "4Hr"]
         )
         collection.resolwe.relation.create.assert_called_with(
-            collection=1,
+            collection=collection,
             type="series",
             category="time-series",
             partitions=[
@@ -138,7 +138,7 @@ class TestCollection(unittest.TestCase):
             category="time-series", samples=[1, 2, 3], positions=[10, 20, 30]
         )
         collection.resolwe.relation.create.assert_called_with(
-            collection=1,
+            collection=collection,
             type="series",
             category="time-series",
             partitions=[
@@ -165,7 +165,7 @@ class TestCollection(unittest.TestCase):
         # only samples
         collection.create_background_relation("background 1", "sample_1", ["sample_2"])
         collection.resolwe.relation.create.assert_called_with(
-            collection=1,
+            collection=collection,
             type="background",
             category="background 1",
             partitions=[

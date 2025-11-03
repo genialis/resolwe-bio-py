@@ -13,6 +13,7 @@ Fixed
 - Fix bug in ``get_or_run`` method
 - Fix a bug in ``QCTables`` where the removal of sample name suffixes
   in MultiQC ``.txt`` files leads to incorrect parsing of MACS prepeak tables
+- Rewrite ``Collection`` shortcuts to use new syntax
 
 
 ===================
