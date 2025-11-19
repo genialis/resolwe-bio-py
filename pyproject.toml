@@ -1,20 +1,15 @@
 [build-system]
-requires = [
-    "setuptools >= 64.0.0",
-    "setuptools_scm >= 6.4.0",
-]
+requires = ["setuptools >= 64.0.0", "setuptools_scm >= 6.4.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "resdk"
 description = "Resolwe SDK for Python"
-authors = [
-    {name = "Genialis, Inc", email = "dev-team@genialis.com"},
-]
+authors = [{ name = "Genialis, Inc", email = "dev-team@genialis.com" }]
 dynamic = ["version"]
 readme = "README.rst"
-license = {file = "LICENSE"}
-requires-python = ">=3.9, <3.14"
+license = { file = "LICENSE" }
+requires-python = ">=3.9, <3.15"
 keywords = [
     "bio",
     "bioinformatics",
@@ -39,16 +34,19 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "aiohttp>=3.9.3",
+    "aiohttp>=3.13.2",
     "requests",
     "urllib3>=2;python_version >= '3.10'",
-    "slumber>=0.7.1",
+    "slumber ~= 0.7.1",
     "wrapt",
     "pytz",
     "tzlocal",
-    "pandas",
+    "pandas ~= 2.3.3",
+    # Force latest version of numpy for Python 3.14.
+    "numpy ~= 2.3.5;python_version >= '3.14'",
     "tqdm",
     "openpyxl",
     "xlrd",
@@ -64,13 +62,9 @@ docs = [
     # writing the missing feature was disability of sphinx-pyproject to detect
     # dynamic project version
 ]
-package = [
-    "twine",
-    "check-manifest",
-    "build",
-]
+package = ["twine", "check-manifest", "build"]
 test = [
-    "black==24.10.0",
+    "black==25.11.0",
     "flake8",
     "isort",
     "mock",
@@ -86,7 +80,7 @@ documentation = "https://resdk.readthedocs.io/en/latest/"
 [tool.setuptools_scm]
 
 [tool.black]
-target-version = ["py39", "py310", "py311", "py312", "py313"]
+target-version = ["py39", "py310", "py311", "py312", "py313", "py314"]
 
 [tool.pydocstyle]
 add-select = "D404"
