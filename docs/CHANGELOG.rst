@@ -8,11 +8,21 @@ All notable changes to this project are documented in this file.
 Unreleased
 ==========
 
+Added
+-----
+- Add support for ``Python 3.14``
+
+
+===================
+22.2.1 - 2025-11-19
+===================
+
 Fixed
 -----
 - Fix bug in ``get_or_run`` method
 - Fix a bug in ``QCTables`` where the removal of sample name suffixes
   in MultiQC ``.txt`` files leads to incorrect parsing of MACS prepeak tables
+- Fix a bug that caused crash when saving ``Relation`` resource
 
 
 ===================
