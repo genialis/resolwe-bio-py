@@ -476,6 +476,11 @@ class LazyResourceField(DictResourceField):
         self._checks_before_get(instance)
         return getattr(instance, self._value_attribute_name, None)
 
+    def changed(self, instance: "BaseResource") -> bool:
+        """Check if the field value has changed."""
+        # Lazy resource fields are read-only so they can never be changed.
+        return False
+
 
 class QueryRelatedField(LazyResourceField):
     """Lazy load resources from another resource query.

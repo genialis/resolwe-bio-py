@@ -14,6 +14,7 @@ Fixed
 - Fix a bug in ``QCTables`` where the removal of sample name suffixes
   in MultiQC ``.txt`` files leads to incorrect parsing of MACS prepeak tables
 - Rewrite ``Collection`` shortcuts to use new syntax
+- Fix a bug that caused crash when saving ``Relation`` resource
 
 
 ===================
