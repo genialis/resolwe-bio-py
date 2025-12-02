@@ -4,6 +4,15 @@ Change Log
 
 All notable changes to this project are documented in this file.
 
+==========
+Unreleased
+==========
+
+Added
+-----
+- Add support for ``Python 3.14``
+
+
 ===================
 22.2.1 - 2025-11-19
 ===================
