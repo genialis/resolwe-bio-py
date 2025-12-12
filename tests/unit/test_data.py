@@ -209,13 +209,16 @@ class TestData(unittest.TestCase):
         with patch("os.rename") as mock_rename:
             Data.download_and_rename(
                 data_mock,
-                custom_file_name="text_file1.txt",
+                custom_asset_name="text_file1.txt",
                 field_name="txt",
                 download_dir="/some/path/",
             )
 
             data_mock.download.assert_called_once_with(
-                file_name=None, field_name="txt", download_dir="/some/path/"
+                file_name=None,
+                field_name="txt",
+                download_dir="/some/path/",
+                return_dir_names=True,
             )
 
             mock_rename.assert_called_once()

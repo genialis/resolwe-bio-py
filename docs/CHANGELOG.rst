@@ -12,6 +12,11 @@ Added
 -----
 - Add support for ``Python 3.14``
 
+Fixed
+-----
+- Fix a bug that prevented the downloading and renaming of
+  a directory from a data object
+
 
 ===================
 22.2.1 - 2025-11-19
