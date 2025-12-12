@@ -277,11 +277,19 @@ class Data(BaseResolweResource):
         file_names = self.files(file_name, field_name)
         files = ["{}/{}".format(self.id, fname) for fname in file_names]
 
+        # Determine the asset name that will be returned.
+        # In case of downloading a directory, return the directory names,
+        # otherwise return the file names.
+        dir_names = self._files_dirs("dir", file_name, field_name)
+        if dir_names:
+            asset_name = dir_names
+        else:
+            asset_name = file_names
+
         self.resolwe._download_files(
             files=files, download_dir=download_dir, show_progress=show_progress
         )
-
-        return file_names
+        return asset_name
 
     def download_and_rename(
         self,
@@ -291,7 +299,7 @@ class Data(BaseResolweResource):
         file_name: Optional[str] = None,
         download_dir: Optional[str] = None,
     ):
-        """Download and rename a single file from the Data object."""
+        """Download and rename a single output field from the Data object."""
 
         if not field_name and not file_name:
             raise ValueError("Either 'file_name' or 'field_name' must be given.")
@@ -300,9 +308,11 @@ class Data(BaseResolweResource):
             download_dir = os.getcwd()
         destination_file_path = os.path.join(download_dir, custom_file_name)
         if os.path.exists(destination_file_path) and not overwrite_existing:
-            raise FileExistsError(
-                f"File with path '{destination_file_path}' already exists. Skipping download."
+            logging.warning(
+                f"File or directory with path '{destination_file_path}' already exists. "
+                "Skipping download."
             )
+            return
 
         source_file_name = self.download(
             file_name=file_name,
@@ -312,7 +322,9 @@ class Data(BaseResolweResource):
 
         source_file_path = os.path.join(download_dir, source_file_name)
 
-        logging.info(f"Renaming file '{source_file_name}' to '{custom_file_name}'.")
+        logging.info(
+            f"Renaming the file or directory from '{source_file_name}' to '{custom_file_name}'."
+        )
         os.rename(
             source_file_path,
             destination_file_path,
