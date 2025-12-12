@@ -257,6 +257,7 @@ class Data(BaseResolweResource):
         field_name: Optional[str] = None,
         download_dir: Optional[str] = None,
         show_progress: bool = True,
+        return_dir_names: bool = False,
     ) -> list[str]:
         """Download Data object's files and directories.
 
@@ -270,6 +271,12 @@ class Data(BaseResolweResource):
         * re.data.get(42).download(file_name='alignment7.bam')
         * re.data.get(42).download(field_name='bam')
 
+        The function returns a list of downloaded file names. In case the
+        Data object contains directories, the user can specify to return directory names
+        instead of file names contained in those directories via the return_dir_names argument.
+        WARNING: If neither file_name nor field_name is specified and return_dir_names is set
+        to True, the method will download both directories and files when the Data object
+        contains both. However, the returned list will include only the directory names.
         """
         if file_name and field_name:
             raise ValueError("Only one of file_name or field_name may be given.")
@@ -281,41 +288,52 @@ class Data(BaseResolweResource):
             files=files, download_dir=download_dir, show_progress=show_progress
         )
 
-        return file_names
+        dir_names = self._files_dirs("dir", file_name, field_name)
+        if dir_names and return_dir_names:
+            asset_names = dir_names
+        else:
+            asset_names = file_names
+
+        return asset_names
 
     def download_and_rename(
         self,
-        custom_file_name: str,
+        custom_asset_name: str,
         overwrite_existing: bool = False,
         field_name: Optional[str] = None,
         file_name: Optional[str] = None,
         download_dir: Optional[str] = None,
     ):
-        """Download and rename a single file from the Data object."""
+        """Download and rename an asset from the Data object."""
 
         if not field_name and not file_name:
             raise ValueError("Either 'file_name' or 'field_name' must be given.")
 
         if download_dir is None:
             download_dir = os.getcwd()
-        destination_file_path = os.path.join(download_dir, custom_file_name)
-        if os.path.exists(destination_file_path) and not overwrite_existing:
-            raise FileExistsError(
-                f"File with path '{destination_file_path}' already exists. Skipping download."
+        destination_asset_path = os.path.join(download_dir, custom_asset_name)
+        if os.path.exists(destination_asset_path) and not overwrite_existing:
+            logging.warning(
+                f"File or directory with path '{destination_asset_path}' already exists. "
+                "Skipping download."
             )
+            return
 
-        source_file_name = self.download(
+        source_asset_name = self.download(
             file_name=file_name,
             field_name=field_name,
             download_dir=download_dir,
+            return_dir_names=True,
         )[0]
 
-        source_file_path = os.path.join(download_dir, source_file_name)
+        source_asset_path = os.path.join(download_dir, source_asset_name)
 
-        logging.info(f"Renaming file '{source_file_name}' to '{custom_file_name}'.")
+        logging.info(
+            f"Renaming the downloaded asset from '{source_asset_name}' to '{custom_asset_name}'."
+        )
         os.rename(
-            source_file_path,
-            destination_file_path,
+            source_asset_path,
+            destination_asset_path,
         )
 
     def stdout(self) -> str:
