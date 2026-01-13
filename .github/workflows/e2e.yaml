@@ -28,7 +28,8 @@ jobs:
 
       - name: Install ReSDK and its testing dependencies
         run: |
-          python${{ env.PYTHON_VERSION }} -m pip install .[test]
+          uv venv --python=${{ env.PYTHON_VERSION }}
+          uv sync --extra=test
 
       - name: Reset Docker credentials store
         run: |
@@ -141,6 +142,5 @@ jobs:
       - name: Run tests
         run: |
           # Make sure `python` refers to the tox environment's Python
-          export PATH=`pwd`/.tox/py310-e2e-resdk/bin:$PATH
-          python${{ env.PYTHON_VERSION }} -m pytest --cov=resdk --cov-report=xml:.reports/resdk_e2e_cov.xml \
+          uv run pytest --cov=resdk --cov-report=xml:.reports/resdk_e2e_cov.xml \
             --junit-xml=.reports/resdk_e2e_report.xml tests/functional/**/e2e_*.py
