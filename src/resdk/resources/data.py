@@ -300,7 +300,6 @@ class Data(BaseResolweResource):
         field_name: Optional[str] = None,
         file_name: Optional[str] = None,
         download_dir: Optional[str] = None,
-        exist_ok: bool = False,
     ):
         """Download and rename an asset from the Data object."""
 
@@ -311,16 +310,11 @@ class Data(BaseResolweResource):
             download_dir = os.getcwd()
         destination_asset_path = os.path.join(download_dir, custom_asset_name)
         if os.path.exists(destination_asset_path) and not overwrite_existing:
-            if exist_ok:
-                logging.warning(
-                    f"File or directory with path '{destination_asset_path}' already exists. "
-                    "Skipping download."
-                )
-                return
-            else:
-                raise FileExistsError(
-                    f"File or directory with path '{destination_asset_path}' already exists."
-                )
+            logging.warning(
+                f"File or directory with path '{destination_asset_path}' already exists. "
+                "Skipping download."
+            )
+            return
 
         source_asset_name = self.download(
             file_name=file_name,
